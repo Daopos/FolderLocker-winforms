@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace UCUFolderLocker
 {
-    public partial class Form2: Form
+    public partial class Lock: Form
     {
-        public Form2()
+        public Lock()
         {
             InitializeComponent();
         }
