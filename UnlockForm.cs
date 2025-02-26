@@ -1,21 +1,25 @@
-using System;
+﻿using System;
 using System.Collections;
-using System.IO;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace UCUFolderLocker
 {
-    public partial class Form1 : Form
+    public partial class UnlockForm: Form
     {
         private string selectedFolderPath = "";
         private string lockDirectory = @"C:\\LockedFolders"; // Store encryption keys here
-
-        public Form1()
+        public UnlockForm()
         {
+
             InitializeComponent();
-            Directory.CreateDirectory(lockDirectory); // Ensure lock directory exists
         }
 
         private void btnBrowse_Click(object sender, EventArgs e)
@@ -30,40 +34,10 @@ namespace UCUFolderLocker
             }
         }
 
-        private void btnLock_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrEmpty(selectedFolderPath) || string.IsNullOrEmpty(txtPassword.Text))
-            {
-                MessageBox.Show("Please select a folder and enter a password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            string password = txtPassword.Text;
-            byte[] key = GenerateKey(password);
-            string keyFilePath = Path.Combine(selectedFolderPath, "lock.key");
-
-            try
-            {
-                EncryptFolder(selectedFolderPath, key);
-
-                // Save the encryption key inside the locked folder
-                File.WriteAllBytes(keyFilePath, key);
-
-                // Copy FolderLock.exe and required runtime files inside the folder
-                CopyRequiredFiles(selectedFolderPath);
-
-              
-
-                MessageBox.Show("Folder Locked Successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error locking folder: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         private void btnUnlock_Click(object sender, EventArgs e)
         {
+            selectedFolderPath = lblFolderPath.Text; // Update selectedFolderPath from the textbox
+
             if (string.IsNullOrEmpty(selectedFolderPath) || string.IsNullOrEmpty(txtPassword.Text))
             {
                 MessageBox.Show("Please select a folder and enter the password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -94,6 +68,7 @@ namespace UCUFolderLocker
             }
         }
 
+
         private byte[] GenerateKey(string password)
         {
             using (SHA256 sha256 = SHA256.Create())
@@ -108,15 +83,6 @@ namespace UCUFolderLocker
             return StructuralComparisons.StructuralEqualityComparer.Equals(inputKey, storedKey);
         }
 
-        private void EncryptFolder(string folderPath, byte[] key)
-        {
-            foreach (string file in Directory.GetFiles(folderPath))
-            {
-                byte[] encryptedData = EncryptFile(File.ReadAllBytes(file), key);
-                File.WriteAllBytes(file + ".locked", encryptedData);
-                File.Delete(file);
-            }
-        }
 
         private void DecryptFolder(string folderPath, byte[] key)
         {
@@ -128,24 +94,6 @@ namespace UCUFolderLocker
             }
         }
 
-        private byte[] EncryptFile(byte[] data, byte[] key)
-        {
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = key;
-                aes.GenerateIV();
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    ms.Write(aes.IV, 0, aes.IV.Length);
-                    using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                    {
-                        cs.Write(data, 0, data.Length);
-                        cs.FlushFinalBlock();
-                        return ms.ToArray();
-                    }
-                }
-            }
-        }
 
         private byte[] DecryptFile(byte[] data, byte[] key)
         {
@@ -167,15 +115,6 @@ namespace UCUFolderLocker
             }
         }
 
-        private void CopyRequiredFiles(string folderPath)
-        {
-            CopyFileIfExists("FolderUnlocker.exe", folderPath);
-            CopyFileIfExists("FolderUnlocker.runtimeconfig.json", folderPath);
-            CopyFileIfExists("FolderUnlocker.pdb", folderPath);
-            CopyFileIfExists("FolderUnlocker.dll", folderPath);
-            CopyFileIfExists("FolderUnlocker.deps.json", folderPath);
-        }
-
         private void DeleteRequiredFiles(string folderPath)
         {
             File.Delete(Path.Combine(folderPath, "FolderUnlocker.exe"));
@@ -186,17 +125,5 @@ namespace UCUFolderLocker
             File.Delete(Path.Combine(folderPath, "Open.bat"));
         }
 
-        private void CopyFileIfExists(string fileName, string destinationFolder)
-        {
-            string sourceFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
-            string destinationFile = Path.Combine(destinationFolder, fileName);
-
-            if (File.Exists(sourceFile))
-            {
-                File.Copy(sourceFile, destinationFile, true);
-            }
-        }
-
-      
     }
 }

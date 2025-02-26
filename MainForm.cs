@@ -13,12 +13,15 @@ namespace UCUFolderLocker
 {
     public partial class MainForm : Form
     {
+        private Color defaultColor = Color.FromArgb(52, 73, 94);
+        private Button activeButton;
         public MainForm()
         {
             InitializeComponent();
+            LoadForm(new All(), btnAllForm); // Default load with Lock form
         }
 
-        private void LoadForm(Form form)
+        private void LoadForm(Form form, Button clickedButton)
         {
             panelContent.Controls.Clear(); // Clear previous content
             form.TopLevel = false;
@@ -26,21 +29,43 @@ namespace UCUFolderLocker
             form.FormBorderStyle = FormBorderStyle.None; // Remove borders
             panelContent.Controls.Add(form);
             form.Show();
+
+            // Change button color
+            SetActiveButton(clickedButton);
         }
 
-      
 
-
-        private void btnLockForm_Click(object sender, EventArgs e)
+        private void SetActiveButton(Button clickedButton)
         {
-            LoadForm(new Lock()); // Load Form1 inside panelContent
+            // Reset previous active button color
+            if (activeButton != null)
+            {
+                activeButton.BackColor = defaultColor; // Default color
+                activeButton.ForeColor = Color.White;
+            }
 
+            // Set new active button color
+            clickedButton.BackColor = Color.LightBlue; // Change to your preferred color
+            clickedButton.ForeColor = Color.Black;
+            activeButton = clickedButton; // Update active button
         }
-
         private void btnAllForm_Click(object sender, EventArgs e)
         {
-            LoadForm(new All()); // Load Form1 inside panelContent
-
+            LoadForm(new All(), btnAllForm);
         }
+        private void btnLockForm_Click(object sender, EventArgs e)
+        {
+            LoadForm(new Lock(), btnLockForm);
+        }
+
+
+        private void btnUnlockForm_Click(object sender, EventArgs e)
+        {
+            LoadForm(new UnlockForm(), btnUnlockForm);
+        }
+
+ 
+
+        
     }
 }
