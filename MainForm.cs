@@ -15,18 +15,30 @@ namespace UCUFolderLocker
     {
         private Color defaultColor = Color.FromArgb(52, 73, 94);
         private Button activeButton;
+
+        // Store form instances
+        private Form allForm;
+        private Form lockForm;
+        private Form unlockForm;
+
         public MainForm()
         {
             InitializeComponent();
-            LoadForm(new All(), btnAllForm); // Default load with Lock form
+
+            // Initialize forms once
+            allForm = new All();
+            lockForm = new Lock();
+            unlockForm = new UnlockForm();
+
+            LoadForm(allForm, btnAllForm); // Default load
         }
 
         private void LoadForm(Form form, Button clickedButton)
         {
-            panelContent.Controls.Clear(); // Clear previous content
+            panelContent.Controls.Clear();
             form.TopLevel = false;
             form.Dock = DockStyle.Fill;
-            form.FormBorderStyle = FormBorderStyle.None; // Remove borders
+            form.FormBorderStyle = FormBorderStyle.None;
             panelContent.Controls.Add(form);
             form.Show();
 
@@ -34,38 +46,32 @@ namespace UCUFolderLocker
             SetActiveButton(clickedButton);
         }
 
-
         private void SetActiveButton(Button clickedButton)
         {
-            // Reset previous active button color
             if (activeButton != null)
             {
-                activeButton.BackColor = defaultColor; // Default color
+                activeButton.BackColor = defaultColor;
                 activeButton.ForeColor = Color.White;
             }
 
-            // Set new active button color
-            clickedButton.BackColor = Color.LightBlue; // Change to your preferred color
+            clickedButton.BackColor = Color.LightBlue;
             clickedButton.ForeColor = Color.Black;
-            activeButton = clickedButton; // Update active button
-        }
-        private void btnAllForm_Click(object sender, EventArgs e)
-        {
-            LoadForm(new All(), btnAllForm);
-        }
-        private void btnLockForm_Click(object sender, EventArgs e)
-        {
-            LoadForm(new Lock(), btnLockForm);
+            activeButton = clickedButton;
         }
 
+        private void btnAllForm_Click(object sender, EventArgs e)
+        {
+            LoadForm(allForm, btnAllForm); // Use stored instance
+        }
+
+        private void btnLockForm_Click(object sender, EventArgs e)
+        {
+            LoadForm(lockForm, btnLockForm); // Use stored instance
+        }
 
         private void btnUnlockForm_Click(object sender, EventArgs e)
         {
-            LoadForm(new UnlockForm(), btnUnlockForm);
+            LoadForm(unlockForm, btnUnlockForm); // Use stored instance
         }
-
- 
-
-        
     }
 }

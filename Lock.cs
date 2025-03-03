@@ -52,6 +52,13 @@ namespace UCUFolderLocker
                 return;
             }
 
+            // Ensure the folder is not empty
+            if (!Directory.EnumerateFileSystemEntries(selectedFolderPath).Any())
+            {
+                MessageBox.Show("The selected folder is empty! Please add files before locking.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             string keyFilePath = Path.Combine(selectedFolderPath, "lock.key");
 
             // Check if the folder is already locked
@@ -77,6 +84,9 @@ namespace UCUFolderLocker
                 // Copy FolderUnlocker.exe and required runtime files inside the folder
                 CopyRequiredFiles(selectedFolderPath);
 
+                // Change the folder icon
+                ChangeDirectoryIcon(selectedFolderPath);
+
                 MessageBox.Show("Folder Locked Successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -85,7 +95,47 @@ namespace UCUFolderLocker
             }
         }
 
+        private void ChangeDirectoryIcon(string folderPath)
+        {
+            try
+            {
+                // Create a lock icon file in the application directory if it doesn't exist
+                string lockIconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lock.ico");
+                if (!File.Exists(lockIconPath))
+                {
+                    // Extract embedded resource icon if you have one, or copy from resources
+                    // For simplicity, let's assume you have a lock.ico file in your project
+                    // that is copied to the output directory
+                }
 
+                // Copy the icon to the locked folder and hide it
+                string destIconPath = Path.Combine(folderPath, "lock.ico");
+                File.Copy(lockIconPath, destIconPath, true);
+                File.SetAttributes(destIconPath, FileAttributes.Hidden);
+
+                // Create desktop.ini file
+                string desktopIniPath = Path.Combine(folderPath, "desktop.ini");
+                string desktopIniContent =
+                    "[.ShellClassInfo]\r\n" +
+                    "IconFile=lock.ico\r\n" +
+                    "IconIndex=0\r\n" +
+                    "ConfirmFileOp=0\r\n";
+
+                File.WriteAllText(desktopIniPath, desktopIniContent, Encoding.Unicode);
+
+                // Set desktop.ini attributes
+                File.SetAttributes(desktopIniPath, FileAttributes.Hidden | FileAttributes.System);
+
+                // Set the folder as system to apply the icon
+                DirectoryInfo di = new DirectoryInfo(folderPath);
+                di.Attributes |= FileAttributes.ReadOnly | FileAttributes.System;
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't interrupt the locking process
+                Console.WriteLine("Error setting folder icon: " + ex.Message);
+            }
+        }
 
         private byte[] GenerateKey(string password)
         {

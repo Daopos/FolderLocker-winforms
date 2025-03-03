@@ -15,7 +15,6 @@ namespace UCUFolderLocker
     public partial class UnlockForm: Form
     {
         private string selectedFolderPath = "";
-        private string lockDirectory = @"C:\\LockedFolders"; // Store encryption keys here
         public UnlockForm()
         {
 
@@ -54,11 +53,16 @@ namespace UCUFolderLocker
             byte[] key = File.ReadAllBytes(keyFilePath);
             if (ValidatePassword(txtPassword.Text, key))
             {
+                // First restore folder attributes to allow file modifications
+                RestoreFolderAttributes(selectedFolderPath);
+
                 DecryptFolder(selectedFolderPath, key);
+
 
                 // Remove lock key and executable files
                 File.Delete(keyFilePath);
                 DeleteRequiredFiles(selectedFolderPath);
+
 
                 MessageBox.Show("Folder Unlocked Successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -67,7 +71,29 @@ namespace UCUFolderLocker
                 MessageBox.Show("Incorrect Password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+        private void RestoreFolderAttributes(string folderPath)
+        {
+            try
+            {
+                // Remove the system and readonly attributes from the folder
+                DirectoryInfo di = new DirectoryInfo(folderPath);
+                di.Attributes &= ~(FileAttributes.ReadOnly | FileAttributes.System);
 
+                // Remove desktop.ini file - first make it normal so we can delete it
+                string desktopIniPath = Path.Combine(folderPath, "desktop.ini");
+                if (File.Exists(desktopIniPath))
+                {
+                    // Clear the hidden and system attributes so we can delete it
+                    File.SetAttributes(desktopIniPath, FileAttributes.Normal);
+                    File.Delete(desktopIniPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error restoring folder attributes: " + ex.Message);
+                // Still continue with the process
+            }
+        }
 
         private byte[] GenerateKey(string password)
         {
@@ -122,7 +148,11 @@ namespace UCUFolderLocker
             File.Delete(Path.Combine(folderPath, "FolderUnlocker.dll"));
             File.Delete(Path.Combine(folderPath, "FolderUnlocker.deps.json"));
             File.Delete(Path.Combine(folderPath, "FolderUnlocker.pdb"));
-            File.Delete(Path.Combine(folderPath, "Open.bat"));
+            File.Delete(Path.Combine(folderPath, "_Open this to unlock the files.bat"));
+            // Delete icon files
+            File.Delete(Path.Combine(folderPath, "desktop.ini"));
+            File.Delete(Path.Combine(folderPath, "lock.ico"));
+
         }
 
     }
