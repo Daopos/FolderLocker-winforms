@@ -20,6 +20,7 @@ namespace UCUFolderLocker
         private Form allForm;
         private Form lockForm;
         private Form unlockForm;
+        private Form forgotForm;
 
         public MainForm()
         {
@@ -29,6 +30,8 @@ namespace UCUFolderLocker
             allForm = new All();
             lockForm = new Lock();
             unlockForm = new UnlockForm();
+            forgotForm = new ForgotForm();
+
 
             LoadForm(allForm, btnAllForm); // Default load
         }
@@ -72,6 +75,11 @@ namespace UCUFolderLocker
         private void btnUnlockForm_Click(object sender, EventArgs e)
         {
             LoadForm(unlockForm, btnUnlockForm); // Use stored instance
+        }
+
+        private void btnForgotForm_Click(object sender, EventArgs e)
+        {
+            LoadForm(forgotForm, btnForgotForm); // Use stored instance
         }
     }
 }

@@ -17,10 +17,9 @@
 
         private void InitializeComponent()
         {
-
-
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             panelSidebar = new Panel();
+            btnForgotForm = new Button();
             btnAllForm = new Button();
             btnLockForm = new Button();
             btnUnlockForm = new Button();
@@ -31,6 +30,7 @@
             // panelSidebar
             // 
             panelSidebar.BackColor = Color.FromArgb(44, 62, 80);
+            panelSidebar.Controls.Add(btnForgotForm);
             panelSidebar.Controls.Add(btnAllForm);
             panelSidebar.Controls.Add(btnLockForm);
             panelSidebar.Controls.Add(btnUnlockForm);
@@ -39,6 +39,22 @@
             panelSidebar.Name = "panelSidebar";
             panelSidebar.Size = new Size(230, 511);
             panelSidebar.TabIndex = 0;
+            // 
+            // btnForgotForm
+            // 
+            btnForgotForm.BackColor = Color.FromArgb(52, 73, 94);
+            btnForgotForm.FlatAppearance.BorderSize = 0;
+            btnForgotForm.FlatStyle = FlatStyle.Flat;
+            btnForgotForm.ForeColor = Color.White;
+            btnForgotForm.Image = (Image)resources.GetObject("btnForgotForm.Image");
+            btnForgotForm.ImageAlign = ContentAlignment.MiddleLeft;
+            btnForgotForm.Location = new Point(10, 238);
+            btnForgotForm.Name = "btnForgotForm";
+            btnForgotForm.Size = new Size(210, 50);
+            btnForgotForm.TabIndex = 4;
+            btnForgotForm.Text = "  Forgot Password";
+            btnForgotForm.UseVisualStyleBackColor = false;
+            btnForgotForm.Click += btnForgotForm_Click;
             // 
             // btnAllForm
             // 
@@ -106,6 +122,7 @@
             Controls.Add(panelContent);
             Controls.Add(panelSidebar);
             FormBorderStyle = FormBorderStyle.FixedSingle;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
@@ -122,5 +139,6 @@
         private Button btnAllForm;
         private Button btnLockForm;
         private Button btnUnlockForm;
+        private Button btnForgotForm;
     }
 }

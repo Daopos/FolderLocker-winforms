@@ -36,12 +36,14 @@ namespace UCUFolderLocker
             // 
             // btnBrowse
             // 
-            btnBrowse.Location = new Point(32, 76);
+            btnBrowse.BackColor = SystemColors.Control;
+            btnBrowse.ForeColor = Color.Black;
+            btnBrowse.Location = new Point(32, 79);
             btnBrowse.Name = "btnBrowse";
             btnBrowse.Size = new Size(100, 30);
             btnBrowse.TabIndex = 1;
             btnBrowse.Text = "Browse";
-            btnBrowse.UseVisualStyleBackColor = true;
+            btnBrowse.UseVisualStyleBackColor = false;
             btnBrowse.Click += btnBrowse_Click;
             // 
             // txtFolderPath

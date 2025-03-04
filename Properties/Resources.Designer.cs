@@ -73,6 +73,16 @@ namespace UCUFolderLocker.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap eye {
+            get {
+                object obj = ResourceManager.GetObject("eye", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap file {
             get {
                 object obj = ResourceManager.GetObject("file", resourceCulture);
@@ -86,6 +96,16 @@ namespace UCUFolderLocker.Properties {
         internal static System.Drawing.Bitmap folder {
             get {
                 object obj = ResourceManager.GetObject("folder", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap hidden {
+            get {
+                object obj = ResourceManager.GetObject("hidden", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

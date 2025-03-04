@@ -12,14 +12,36 @@ using System.Windows.Forms;
 
 namespace UCUFolderLocker
 {
-    public partial class Lock: Form
+    public partial class Lock : Form
     {
+        private string recoveryEmailFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "UCUFolderLocker", "recovery_email.txt");
+
+
         private string selectedFolderPath = "";
         public Lock()
         {
             InitializeComponent();
+            LoadRecoveryEmail();
         }
 
+        private void btnTogglePassword_Click(object sender, EventArgs e)
+        {
+            txtPassword.UseSystemPasswordChar = !txtPassword.UseSystemPasswordChar;
+            btnTogglePassword.Image = txtPassword.UseSystemPasswordChar ? Properties.Resources.eye : Properties.Resources.hidden;
+        }
+
+        private void btnToggleConfirmPassword_Click(object sender, EventArgs e)
+        {
+            txtConfirmPassword.UseSystemPasswordChar = !txtConfirmPassword.UseSystemPasswordChar;
+            btnToggleConfirmPassword.Image = txtConfirmPassword.UseSystemPasswordChar ? Properties.Resources.eye : Properties.Resources.hidden;
+        }
+        private void LoadRecoveryEmail()
+        {
+            if (File.Exists(recoveryEmailFilePath))
+            {
+                txtRecoveryEmail.Text = File.ReadAllText(recoveryEmailFilePath);
+            }
+        }
         private void btnBrowse_Click(object sender, EventArgs e)
         {
             using (FolderBrowserDialog folderDialog = new FolderBrowserDialog())
@@ -34,6 +56,8 @@ namespace UCUFolderLocker
 
         private void btnLock_Click(object sender, EventArgs e)
         {
+            selectedFolderPath = lblFolderPath.Text;
+
             if (string.IsNullOrEmpty(selectedFolderPath) || string.IsNullOrEmpty(txtPassword.Text))
             {
                 MessageBox.Show("Please select a folder and enter a password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -68,18 +92,40 @@ namespace UCUFolderLocker
                 return;
             }
 
+            // Validate email
+            if (string.IsNullOrEmpty(txtRecoveryEmail.Text) || !IsValidEmail(txtRecoveryEmail.Text))
+            {
+                MessageBox.Show("Please enter a valid recovery email!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             string password = txtPassword.Text;
             byte[] key = GenerateKey(password);
-
             try
             {
+                buttonLock.Enabled = false;
+                lblStatus.Visible = false;
+                progressBarLoading.Visible = true; // Show progress bar
                 EncryptFolder(selectedFolderPath, key);
 
                 // Save the encryption key inside the locked folder
                 File.WriteAllBytes(keyFilePath, key);
 
                 // Make the lock key file hidden
-                File.SetAttributes(keyFilePath, FileAttributes.Hidden);
+                File.SetAttributes(keyFilePath, FileAttributes.Hidden | FileAttributes.System);
+
+                //recovery email
+                string emailFilePath = Path.Combine(selectedFolderPath, "recoveryemail.dat");
+                File.WriteAllText(emailFilePath, txtRecoveryEmail.Text); // Save the recovery email
+                File.SetAttributes(emailFilePath, FileAttributes.Hidden | FileAttributes.System); // Hide it
+
+                //recovery passwrod
+                string recoveryFilePath = Path.Combine(selectedFolderPath, "recovery.dat");
+                string encryptedPassword = EncryptData(txtPassword.Text, "your_secret_key"); // Encrypt password
+                string recoveryData = $"{txtRecoveryEmail.Text}\n{encryptedPassword}"; // Store email & encrypted password
+                File.WriteAllText(recoveryFilePath, recoveryData);
+
+                // Hide the file
+                File.SetAttributes(recoveryFilePath, FileAttributes.Hidden | FileAttributes.System);
 
                 // Copy FolderUnlocker.exe and required runtime files inside the folder
                 CopyRequiredFiles(selectedFolderPath);
@@ -87,11 +133,22 @@ namespace UCUFolderLocker
                 // Change the folder icon
                 ChangeDirectoryIcon(selectedFolderPath);
 
+                lblStatus.Visible = true;
+                lblStatus.ForeColor = System.Drawing.Color.Green;
+                lblStatus.Text = "Status: Folder locked successfully!";
                 MessageBox.Show("Folder Locked Successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
+                lblStatus.Visible = true;
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                lblStatus.Text = "Status: Error occurred!";
                 MessageBox.Show("Error locking folder: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                progressBarLoading.Visible = false; // Hide progress bar
+                buttonLock.Enabled = true;
             }
         }
 
@@ -136,12 +193,48 @@ namespace UCUFolderLocker
                 Console.WriteLine("Error setting folder icon: " + ex.Message);
             }
         }
+        private static string EncryptData(string text, string key)
+        {
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(key));
+                aes.IV = new byte[16]; // Default IV (all zeros)
 
-        private byte[] GenerateKey(string password)
+                using (MemoryStream ms = new MemoryStream())
+                using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                {
+                    using (StreamWriter sw = new StreamWriter(cs))
+                    {
+                        sw.Write(text);
+                    }
+                    return Convert.ToBase64String(ms.ToArray());
+                }
+            }
+        }
+        private static byte[] GenerateKey(string password)
         {
             using (SHA256 sha256 = SHA256.Create())
             {
                 return sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            }
+        }
+
+        private byte[] EncryptFile(byte[] data, byte[] key)
+        {
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = key;
+                aes.GenerateIV(); // IV is necessary for AES
+
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    ms.Write(aes.IV, 0, aes.IV.Length);
+                    using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                    {
+                        cs.Write(data, 0, data.Length);
+                    }
+                    return ms.ToArray();
+                }
             }
         }
 
@@ -152,26 +245,6 @@ namespace UCUFolderLocker
                 byte[] encryptedData = EncryptFile(File.ReadAllBytes(file), key);
                 File.WriteAllBytes(file + ".locked", encryptedData);
                 File.Delete(file);
-            }
-        }
-
-
-        private byte[] EncryptFile(byte[] data, byte[] key)
-        {
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = key;
-                aes.GenerateIV();
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    ms.Write(aes.IV, 0, aes.IV.Length);
-                    using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                    {
-                        cs.Write(data, 0, data.Length);
-                        cs.FlushFinalBlock();
-                        return ms.ToArray();
-                    }
-                }
             }
         }
 
@@ -208,6 +281,22 @@ namespace UCUFolderLocker
             File.WriteAllText(batchFilePath, batchContent, Encoding.UTF8);
         }
 
-    
+        private bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+     
+        private void txtConfirmPassword_TextChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }
