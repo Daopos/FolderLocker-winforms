@@ -140,7 +140,7 @@
             // 
             // btnTogglePassword
             // 
-            btnTogglePassword.Image = Properties.Resources.eye;
+            btnTogglePassword.Image = Properties.Resources.hidden;
             btnTogglePassword.Location = new Point(517, 134);
             btnTogglePassword.Name = "btnTogglePassword";
             btnTogglePassword.Size = new Size(26, 23);

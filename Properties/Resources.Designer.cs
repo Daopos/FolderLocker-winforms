@@ -103,9 +103,29 @@ namespace UCUFolderLocker.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap help {
+            get {
+                object obj = ResourceManager.GetObject("help", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap hidden {
             get {
                 object obj = ResourceManager.GetObject("hidden", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Screenshot_2025_03_04_203142 {
+            get {
+                object obj = ResourceManager.GetObject("Screenshot 2025-03-04 203142", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

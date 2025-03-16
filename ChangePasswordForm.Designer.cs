@@ -34,12 +34,12 @@
             label1 = new Label();
             label2 = new Label();
             button1 = new Button();
+            btnToggleConfirmPassword = new PictureBox();
             btnTogglePassword = new PictureBox();
-            pictureBox1 = new PictureBox();
             label3 = new Label();
             panel1 = new Panel();
+            ((System.ComponentModel.ISupportInitialize)btnToggleConfirmPassword).BeginInit();
             ((System.ComponentModel.ISupportInitialize)btnTogglePassword).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             panel1.SuspendLayout();
             SuspendLayout();
             // 
@@ -48,18 +48,18 @@
             txtNewPassword.Font = new Font("Segoe UI", 12F);
             txtNewPassword.Location = new Point(128, 108);
             txtNewPassword.Name = "txtNewPassword";
-            txtNewPassword.PasswordChar = '●';
             txtNewPassword.Size = new Size(186, 34);
             txtNewPassword.TabIndex = 0;
+            txtNewPassword.UseSystemPasswordChar = true;
             // 
             // txtConfirmPassword
             // 
             txtConfirmPassword.Font = new Font("Segoe UI", 12F);
             txtConfirmPassword.Location = new Point(128, 176);
             txtConfirmPassword.Name = "txtConfirmPassword";
-            txtConfirmPassword.PasswordChar = '●';
             txtConfirmPassword.Size = new Size(186, 34);
             txtConfirmPassword.TabIndex = 1;
+            txtConfirmPassword.UseSystemPasswordChar = true;
             // 
             // btnChangePassword_Click
             // 
@@ -109,25 +109,25 @@
             button1.UseVisualStyleBackColor = false;
             button1.Click += btnCancel_Click;
             // 
+            // btnToggleConfirmPassword
+            // 
+            btnToggleConfirmPassword.Image = Properties.Resources.hidden;
+            btnToggleConfirmPassword.Location = new Point(320, 182);
+            btnToggleConfirmPassword.Name = "btnToggleConfirmPassword";
+            btnToggleConfirmPassword.Size = new Size(26, 23);
+            btnToggleConfirmPassword.TabIndex = 16;
+            btnToggleConfirmPassword.TabStop = false;
+            btnToggleConfirmPassword.Click += btnToggleConfirmPassword_Click;
+            // 
             // btnTogglePassword
             // 
-            btnTogglePassword.Image = Properties.Resources.eye;
-            btnTogglePassword.Location = new Point(320, 182);
+            btnTogglePassword.Image = Properties.Resources.hidden;
+            btnTogglePassword.Location = new Point(320, 114);
             btnTogglePassword.Name = "btnTogglePassword";
             btnTogglePassword.Size = new Size(26, 23);
-            btnTogglePassword.TabIndex = 16;
+            btnTogglePassword.TabIndex = 17;
             btnTogglePassword.TabStop = false;
-            btnTogglePassword.Click += btnToggleConfirmPassword_Click;
-            // 
-            // pictureBox1
-            // 
-            pictureBox1.Image = Properties.Resources.eye;
-            pictureBox1.Location = new Point(320, 114);
-            pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(26, 23);
-            pictureBox1.TabIndex = 17;
-            pictureBox1.TabStop = false;
-            pictureBox1.Click += btnTogglePassword_Click;
+            btnTogglePassword.Click += btnTogglePassword_Click;
             // 
             // label3
             // 
@@ -156,8 +156,8 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(452, 363);
             Controls.Add(panel1);
-            Controls.Add(pictureBox1);
             Controls.Add(btnTogglePassword);
+            Controls.Add(btnToggleConfirmPassword);
             Controls.Add(button1);
             Controls.Add(label2);
             Controls.Add(label1);
@@ -166,9 +166,10 @@
             Controls.Add(txtNewPassword);
             MaximizeBox = false;
             Name = "ChangePasswordForm";
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "ChangePasswordForm";
+            ((System.ComponentModel.ISupportInitialize)btnToggleConfirmPassword).EndInit();
             ((System.ComponentModel.ISupportInitialize)btnTogglePassword).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             ResumeLayout(false);
@@ -183,8 +184,8 @@
         private Label label1;
         private Label label2;
         private Button button1;
+        private PictureBox btnToggleConfirmPassword;
         private PictureBox btnTogglePassword;
-        private PictureBox pictureBox1;
         private Label label3;
         private Panel panel1;
     }

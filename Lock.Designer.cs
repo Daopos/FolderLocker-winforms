@@ -37,6 +37,7 @@
             progressBarLoading = new ProgressBar();
             btnTogglePassword = new PictureBox();
             btnToggleConfirmPassword = new PictureBox();
+            chkNTFSProtection = new CheckBox();
             panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)btnTogglePassword).BeginInit();
             ((System.ComponentModel.ISupportInitialize)btnToggleConfirmPassword).BeginInit();
@@ -111,7 +112,6 @@
             txtConfirmPassword.Size = new Size(370, 34);
             txtConfirmPassword.TabIndex = 3;
             txtConfirmPassword.UseSystemPasswordChar = true;
-            txtConfirmPassword.TextChanged += txtConfirmPassword_TextChanged;
             // 
             // labelRecovery
             // 
@@ -137,7 +137,7 @@
             buttonLock.FlatStyle = FlatStyle.Flat;
             buttonLock.Font = new Font("Segoe UI Semibold", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
             buttonLock.ForeColor = Color.White;
-            buttonLock.Location = new Point(196, 321);
+            buttonLock.Location = new Point(196, 356);
             buttonLock.Name = "buttonLock";
             buttonLock.Size = new Size(370, 57);
             buttonLock.TabIndex = 0;
@@ -171,7 +171,7 @@
             // 
             lblStatus.AutoSize = true;
             lblStatus.Font = new Font("Segoe UI", 11F);
-            lblStatus.Location = new Point(18, 283);
+            lblStatus.Location = new Point(18, 318);
             lblStatus.Name = "lblStatus";
             lblStatus.Size = new Size(257, 25);
             lblStatus.TabIndex = 11;
@@ -180,7 +180,7 @@
             // 
             // progressBarLoading
             // 
-            progressBarLoading.Location = new Point(196, 384);
+            progressBarLoading.Location = new Point(196, 419);
             progressBarLoading.Name = "progressBarLoading";
             progressBarLoading.Size = new Size(370, 29);
             progressBarLoading.Style = ProgressBarStyle.Marquee;
@@ -189,7 +189,7 @@
             // 
             // btnTogglePassword
             // 
-            btnTogglePassword.Image = Properties.Resources.eye;
+            btnTogglePassword.Image = Properties.Resources.hidden;
             btnTogglePassword.Location = new Point(572, 144);
             btnTogglePassword.Name = "btnTogglePassword";
             btnTogglePassword.Size = new Size(26, 23);
@@ -199,7 +199,7 @@
             // 
             // btnToggleConfirmPassword
             // 
-            btnToggleConfirmPassword.Image = Properties.Resources.eye;
+            btnToggleConfirmPassword.Image = Properties.Resources.hidden;
             btnToggleConfirmPassword.Location = new Point(572, 191);
             btnToggleConfirmPassword.Name = "btnToggleConfirmPassword";
             btnToggleConfirmPassword.Size = new Size(26, 23);
@@ -207,11 +207,22 @@
             btnToggleConfirmPassword.TabStop = false;
             btnToggleConfirmPassword.Click += btnToggleConfirmPassword_Click;
             // 
+            // chkNTFSProtection
+            // 
+            chkNTFSProtection.AutoSize = true;
+            chkNTFSProtection.Location = new Point(196, 283);
+            chkNTFSProtection.Name = "chkNTFSProtection";
+            chkNTFSProtection.Size = new Size(138, 24);
+            chkNTFSProtection.TabIndex = 15;
+            chkNTFSProtection.Text = "NTFS protection";
+            chkNTFSProtection.UseVisualStyleBackColor = true;
+            // 
             // Lock
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(765, 464);
+            Controls.Add(chkNTFSProtection);
             Controls.Add(btnToggleConfirmPassword);
             Controls.Add(btnTogglePassword);
             Controls.Add(progressBarLoading);
@@ -257,5 +268,6 @@
         private ProgressBar progressBarLoading;
         private PictureBox btnTogglePassword;
         private PictureBox btnToggleConfirmPassword;
+        private CheckBox chkNTFSProtection;
     }
 }

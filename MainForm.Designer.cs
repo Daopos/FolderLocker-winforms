@@ -19,6 +19,7 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             panelSidebar = new Panel();
+            btnHelpForm = new Button();
             btnForgotForm = new Button();
             btnAllForm = new Button();
             btnLockForm = new Button();
@@ -30,6 +31,7 @@
             // panelSidebar
             // 
             panelSidebar.BackColor = Color.FromArgb(44, 62, 80);
+            panelSidebar.Controls.Add(btnHelpForm);
             panelSidebar.Controls.Add(btnForgotForm);
             panelSidebar.Controls.Add(btnAllForm);
             panelSidebar.Controls.Add(btnLockForm);
@@ -39,6 +41,22 @@
             panelSidebar.Name = "panelSidebar";
             panelSidebar.Size = new Size(230, 511);
             panelSidebar.TabIndex = 0;
+            // 
+            // btnHelpForm
+            // 
+            btnHelpForm.BackColor = Color.FromArgb(52, 73, 94);
+            btnHelpForm.FlatAppearance.BorderSize = 0;
+            btnHelpForm.FlatStyle = FlatStyle.Flat;
+            btnHelpForm.ForeColor = Color.White;
+            btnHelpForm.Image = Properties.Resources.help;
+            btnHelpForm.ImageAlign = ContentAlignment.MiddleLeft;
+            btnHelpForm.Location = new Point(10, 426);
+            btnHelpForm.Name = "btnHelpForm";
+            btnHelpForm.Size = new Size(210, 50);
+            btnHelpForm.TabIndex = 5;
+            btnHelpForm.Text = "Help Center";
+            btnHelpForm.UseVisualStyleBackColor = false;
+            btnHelpForm.Click += btnHelpForm_Click;
             // 
             // btnForgotForm
             // 
@@ -140,5 +158,6 @@
         private Button btnLockForm;
         private Button btnUnlockForm;
         private Button btnForgotForm;
+        private Button btnHelpForm;
     }
 }

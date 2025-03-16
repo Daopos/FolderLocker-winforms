@@ -1,99 +1,220 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace UCUFolderLocker
 {
-    public partial class UnlockForm: Form
+    public partial class UnlockForm : Form
     {
         private string selectedFolderPath = "";
+
         public UnlockForm()
         {
-
             InitializeComponent();
         }
+
         private void btnTogglePassword_Click(object sender, EventArgs e)
         {
             txtPassword.UseSystemPasswordChar = !txtPassword.UseSystemPasswordChar;
-            btnTogglePassword.Image = txtPassword.UseSystemPasswordChar ? Properties.Resources.eye : Properties.Resources.hidden;
+            btnTogglePassword.Image = txtPassword.UseSystemPasswordChar ? Properties.Resources.hidden : Properties.Resources.eye;
         }
+
         private void btnBrowse_Click(object sender, EventArgs e)
         {
-            using (FolderBrowserDialog folderDialog = new FolderBrowserDialog())
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                if (folderDialog.ShowDialog() == DialogResult.OK)
+                // Modify the OpenFileDialog to show all files
+                openFileDialog.Filter = "Locked Files (*.lock)|*.lock";
+                openFileDialog.ValidateNames = false;
+                openFileDialog.CheckFileExists = false;
+                openFileDialog.ReadOnlyChecked = true;
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    selectedFolderPath = folderDialog.SelectedPath;
-                    lblFolderPath.Text = selectedFolderPath;
+                    string selectedPath = openFileDialog.FileName;
+
+                    // Try to temporarily adjust permissions just to verify the file exists
+                    try
+                    {
+                        // First check if the file exists using File.Exists which may work even with restricted permissions
+                        if (File.Exists(selectedPath))
+                        {
+                            lblFolderPath.Text = selectedPath;
+                        }
+                        else
+                        {
+                            MessageBox.Show("Selected file does not exist or cannot be accessed.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // Even if we got an access exception, still set the path
+                        // We'll deal with permissions when unlocking
+                        lblFolderPath.Text = selectedPath;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error selecting file: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }
+
 
         private void btnUnlock_Click(object sender, EventArgs e)
         {
-            selectedFolderPath = lblFolderPath.Text;
-            if (string.IsNullOrEmpty(selectedFolderPath) || string.IsNullOrEmpty(txtPassword.Text))
+            string lockedFilePath = lblFolderPath.Text;
+            if (string.IsNullOrEmpty(lockedFilePath))
             {
-                MessageBox.Show("Please select a folder and enter the password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please select a locked file!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                lblStatus.Text = "Unlock failed: No file selected.";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                lblStatus.Visible = true;
+                return;
+            }
+            if (string.IsNullOrEmpty(txtPassword.Text))
+            {
+                MessageBox.Show("Please enter the password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                lblStatus.Text = "Unlock failed: No password entered.";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                lblStatus.Visible = true;
                 return;
             }
 
-            string keyFilePath = Path.Combine(selectedFolderPath, "lock.key");
-            if (!File.Exists(keyFilePath))
+
+            progressBarLoading.Visible = true;
+
+            // Check if NTFS protection exists before removing it
+            bool hadNTFSProtection = CheckIfHasNTFSProtection(lockedFilePath);
+
+            if (hadNTFSProtection)
             {
-                MessageBox.Show("This folder is not locked!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                RemoveNTFSProtection(lockedFilePath);
             }
 
+            string originalFolderName = Path.GetFileNameWithoutExtension(lockedFilePath);
+            string destinationFolder = Path.Combine(Path.GetDirectoryName(lockedFilePath), originalFolderName);
             try
             {
-                buttonUnlock.Enabled = false;
-                lblStatus.Text = "Processing...";
-                lblStatus.Visible = false;
-                progressBarLoading.Visible = true;
+                byte[] key = GenerateKey(txtPassword.Text);
+                DecryptAndExtractFolder(lockedFilePath, destinationFolder, key);
+                // Delete the locked file after successful extraction
+                File.Delete(lockedFilePath);
 
-                byte[] storedKey = File.ReadAllBytes(keyFilePath);
-                byte[] inputKey = GenerateKey(txtPassword.Text);
+                lblStatus.Text = "Folder unlocked successfully.";
+                lblStatus.ForeColor = System.Drawing.Color.Green;
+                lblStatus.Visible = true;
 
-                if (storedKey.SequenceEqual(inputKey))
+                txtPassword.Clear();
+                lblFolderPath.Clear();
+
+                MessageBox.Show("Folder unlocked successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (CryptographicException)
+            {
+                // Only reapply protection if it was there originally
+                if (hadNTFSProtection)
                 {
-                    RestoreFolderAttributes(selectedFolderPath);
-                    DecryptFolder(selectedFolderPath, inputKey);
-                    File.Delete(keyFilePath);
-                    DeleteRequiredFiles(selectedFolderPath);
+                    ApplyNTFSProtection(lockedFilePath);
+                }
+                lblStatus.Text = "Wrong password entered.";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                lblStatus.Visible = true;
 
-                    lblStatus.Visible = true;
-                    lblStatus.ForeColor = Color.Green;
-                    lblStatus.Text = "Status: Folder unlocked successfully!";
-                    MessageBox.Show("Folder Unlocked Successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    lblStatus.Visible = true;
-                    lblStatus.ForeColor = Color.Red;
-                    lblStatus.Text = "Status: Incorrect Password!";
-                    MessageBox.Show("Incorrect Password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                MessageBox.Show("Wrong password entered. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
+                // Only reapply protection if it was there originally
+                if (hadNTFSProtection)
+                {
+                    ApplyNTFSProtection(lockedFilePath);
+                }
+                lblStatus.Text = "Wrong password entered.";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
                 lblStatus.Visible = true;
-                lblStatus.ForeColor = Color.Red;
-                lblStatus.Text = "Status: Error occurred!";
-                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error unlocking folder: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 progressBarLoading.Visible = false;
-                buttonUnlock.Enabled = true;
+            }
+        }
+
+        private void DecryptAndExtractFolder(string encryptedFilePath, string destinationFolder, byte[] key)
+        {
+            // Create a temporary file to work with
+            string tempFilePath = Path.GetTempFileName();
+
+            try
+            {
+                // Read the original encrypted file, excluding the recovery information
+                byte[] fileData = File.ReadAllBytes(encryptedFilePath);
+
+                // The recovery information is 32 bytes (IV + encrypted password) at the end
+                // We need to remove it before decryption
+                int recoveryInfoSize = 32; // Adjust this if you changed the size
+                int actualDataSize = fileData.Length;
+
+                // Check if we might have recovery info appended
+                if (fileData.Length > recoveryInfoSize)
+                {
+                    // Remove potential recovery info - write only the encrypted folder data
+                    actualDataSize = fileData.Length - recoveryInfoSize;
+                    File.WriteAllBytes(tempFilePath, fileData.Take(actualDataSize).ToArray());
+                }
+                else
+                {
+                    // No recovery info, use the original file
+                    File.Copy(encryptedFilePath, tempFilePath, true);
+                }
+
+                // Now decrypt the cleaned file
+                using (FileStream fsInput = new FileStream(tempFilePath, FileMode.Open))
+                {
+                    using (Aes aes = Aes.Create())
+                    {
+                        aes.Key = key;
+                        byte[] iv = new byte[aes.IV.Length];
+
+                        // Read IV from the encrypted file
+                        fsInput.Read(iv, 0, iv.Length);
+                        aes.IV = iv;
+
+                        using (CryptoStream csDecrypt = new CryptoStream(fsInput, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                        using (ZipArchive zipArchive = new ZipArchive(csDecrypt, ZipArchiveMode.Read))
+                        {
+                            zipArchive.ExtractToDirectory(destinationFolder);
+                        }
+                    }
+                }
+
+                // Delete the locked file after successful extraction if requested
+                File.Delete(encryptedFilePath);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Decryption failed: " + ex.Message, ex);
+            }
+            finally
+            {
+                // Clean up temp file
+                if (File.Exists(tempFilePath))
+                {
+                    File.Delete(tempFilePath);
+                }
             }
         }
 
@@ -105,102 +226,40 @@ namespace UCUFolderLocker
             }
         }
 
-        private void DecryptFolder(string folderPath, byte[] key)
-        {
-            foreach (string file in Directory.GetFiles(folderPath, "*.locked"))
-            {
-                byte[] decryptedData = DecryptFile(File.ReadAllBytes(file), key);
-                File.WriteAllBytes(file.Replace(".locked", ""), decryptedData);
-                File.Delete(file);
-            }
-        }
-
-        private byte[] DecryptFile(byte[] data, byte[] key)
-        {
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = key;
-                byte[] iv = new byte[aes.BlockSize / 8];
-                Array.Copy(data, 0, iv, 0, iv.Length);
-                aes.IV = iv;
-
-                using (MemoryStream ms = new MemoryStream())
-                using (CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Write))
-                {
-                    cs.Write(data, iv.Length, data.Length - iv.Length);
-                    cs.FlushFinalBlock();
-                    return ms.ToArray();
-                }
-            }
-        }
-
-        private void DeleteRequiredFiles(string folderPath)
-        {
-            string[] filesToDelete =
-            {
-                "FolderUnlocker.exe",
-                "FolderUnlocker.runtimeconfig.json",
-                "FolderUnlocker.dll",
-                "FolderUnlocker.deps.json",
-                "FolderUnlocker.pdb",
-                "_Open this to unlock the files.bat",
-                "desktop.ini",
-                "lock.ico",
-                "recovery.dat",
-                "recoveryemail.dat",
-            };
-
-            foreach (string file in filesToDelete)
-            {
-                string filePath = Path.Combine(folderPath, file);
-                if (File.Exists(filePath)) File.Delete(filePath);
-            }
-        }
-
-        private void RestoreFolderAttributes(string folderPath)
-        {
-            try
-            {
-                DirectoryInfo di = new DirectoryInfo(folderPath);
-                di.Attributes &= ~(FileAttributes.ReadOnly | FileAttributes.System);
-
-                string desktopIniPath = Path.Combine(folderPath, "desktop.ini");
-                if (File.Exists(desktopIniPath))
-                {
-                    File.SetAttributes(desktopIniPath, FileAttributes.Normal);
-                    File.Delete(desktopIniPath);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error restoring folder attributes: " + ex.Message);
-            }
-        }
-
         private void btnChangePassword_Click(object sender, EventArgs e)
         {
-            selectedFolderPath = lblFolderPath.Text;
-            if (string.IsNullOrEmpty(selectedFolderPath) || string.IsNullOrEmpty(txtPassword.Text))
+            string lockedFilePath = lblFolderPath.Text;
+            if (string.IsNullOrEmpty(lockedFilePath))
             {
-                MessageBox.Show("Please select a folder and enter the current password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please select a locked file!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                lblStatus.Text = "Password change failed: No file selected.";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                lblStatus.Visible = true;
                 return;
             }
 
-            string keyFilePath = Path.Combine(selectedFolderPath, "lock.key");
-            if (!File.Exists(keyFilePath))
+            string oldPassword = txtPassword.Text;
+            if (string.IsNullOrEmpty(oldPassword))
             {
-                MessageBox.Show("This folder is not locked!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please enter the current password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                lblStatus.Text = "Password change failed: No current password entered.";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                lblStatus.Visible = true;
                 return;
+            }
+
+            progressBarLoading.Visible = true;
+            bool hadNTFSProtection = CheckIfHasNTFSProtection(lockedFilePath);
+
+            if (hadNTFSProtection)
+            {
+                RemoveNTFSProtection(lockedFilePath);
             }
 
             try
             {
-                File.SetAttributes(keyFilePath, FileAttributes.Normal); // Remove ReadOnly/System attribute
-
-                byte[] storedKey = File.ReadAllBytes(keyFilePath); // Read current key
-                byte[] inputKey = GenerateKey(txtPassword.Text);
-
-                if (storedKey.SequenceEqual(inputKey))
+                byte[] key = GenerateKey(oldPassword);
+                if (IsPasswordValid(lockedFilePath, key))
                 {
                     using (ChangePasswordForm changePasswordForm = new ChangePasswordForm())
                     {
@@ -208,146 +267,386 @@ namespace UCUFolderLocker
                         {
                             string newPassword = changePasswordForm.NewPassword;
 
-                            // Generate new key from the new password
-                            byte[] newKey = GenerateKey(newPassword);
-
-                            // Decrypt all files with old key
-                            DecryptFolder(selectedFolderPath, inputKey);
-
-                            // Save the new key
-                            File.WriteAllBytes(keyFilePath, newKey);
-
-                            // Update recovery.dat with new password
-                            string recoveryFilePath = Path.Combine(selectedFolderPath, "recovery.dat");
-
-                            if (File.Exists(recoveryFilePath))
+                            // Ensure password is at least 3 characters long
+                            if (newPassword.Length < 3)
                             {
-                                try
+                                MessageBox.Show("New password must be at least 3 characters long!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                lblStatus.Text = "Password change failed: Password too short.";
+                                lblStatus.ForeColor = System.Drawing.Color.Red;
+                                lblStatus.Visible = true;
+
+                                // Reapply NTFS protection if it was originally there
+                                if (hadNTFSProtection)
                                 {
-                                    // Remove hidden and system attributes before modifying
-                                    File.SetAttributes(recoveryFilePath, FileAttributes.Normal);
-
-                                    // Read the existing recovery email
-                                    string[] recoveryData = File.ReadAllLines(recoveryFilePath);
-                                    string recoveryEmail = recoveryData.Length > 0 ? recoveryData[0] : "unknown@example.com"; // Fallback if empty
-
-                                    // Encrypt the new password
-                                    string encryptedNewPassword = EncryptData(newPassword, "your_secret_key");
-
-                                    // Save updated recovery data
-                                    string updatedRecoveryData = $"{recoveryEmail}\n{encryptedNewPassword}";
-                                    File.WriteAllText(recoveryFilePath, updatedRecoveryData);
-
-                                    // Reapply hidden and system attributes
-                                    File.SetAttributes(recoveryFilePath, FileAttributes.Hidden | FileAttributes.System);
+                                    ApplyNTFSProtection(lockedFilePath);
                                 }
-                                catch (Exception ex)
-                                {
-                                    File.SetAttributes(recoveryFilePath, FileAttributes.Hidden | FileAttributes.System);
-                                    MessageBox.Show($"Error updating recovery file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                }
+                                return;
                             }
 
-
-
-                            // Re-encrypt the files with the new key
-                            // List of essential files that should not be encrypted
-                            HashSet<string> excludedFiles = new HashSet<string>
-{
-    "FolderUnlocker.exe",
-    "FolderUnlocker.runtimeconfig.json",
-    "FolderUnlocker.dll",
-    "FolderUnlocker.deps.json",
-    "FolderUnlocker.pdb",
-    "_Open this to unlock the files.bat",
-    "desktop.ini",
-    "lock.ico",
-    "recoveryemail.dat",
-    "recovery.dat",
-    "lock.key" // Ensure the lock key is not mistakenly encrypted
-};
-
-                            foreach (string file in Directory.GetFiles(selectedFolderPath))
+                            try
                             {
-                                string fileName = Path.GetFileName(file);
+                                ChangePassword(lockedFilePath, oldPassword, newPassword);
+                                MessageBox.Show("Password changed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                                // Skip encryption for essential files
-                                if (!excludedFiles.Contains(fileName) && !file.EndsWith(".locked"))
+                                lblStatus.Text = "Password changed successfully.";
+                                lblStatus.ForeColor = System.Drawing.Color.Green;
+                                lblStatus.Visible = true;
+
+                                txtPassword.Clear();
+                                lblFolderPath.Clear();
+
+                                // Reapply NTFS protection after successful password change
+                                if (hadNTFSProtection)
                                 {
-                                    byte[] fileData = File.ReadAllBytes(file);
-                                    byte[] encryptedData = EncryptFile(fileData, newKey);
-                                    File.WriteAllBytes(file + ".locked", encryptedData);
-                                    File.Delete(file);
+                                    ApplyNTFSProtection(lockedFilePath);
                                 }
                             }
-
-                            // Hide the key file again after writing
-                            File.SetAttributes(keyFilePath, FileAttributes.Hidden | FileAttributes.System);
-
+                            catch (Exception ex)
+                            {
+                                if (hadNTFSProtection)
+                                {
+                                    ApplyNTFSProtection(lockedFilePath);
+                                }
+                                MessageBox.Show("Error changing password: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                lblStatus.Text = "Error changing password.";
+                                lblStatus.ForeColor = System.Drawing.Color.Red;
+                                lblStatus.Visible = true;
+                            }
+                        }
+                        else
+                        {
+                            if (hadNTFSProtection)
+                            {
+                                ApplyNTFSProtection(lockedFilePath);
+                            }
+                            lblStatus.Text = "Password change canceled.";
+                            lblStatus.ForeColor = System.Drawing.Color.Orange;
                             lblStatus.Visible = true;
-                            lblStatus.ForeColor = Color.Green;
-                            lblStatus.Text = "Status: Password changed successfully!";
-                            MessageBox.Show("Password changed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
                     }
                 }
                 else
                 {
-                    File.SetAttributes(keyFilePath, FileAttributes.Hidden); // Remove ReadOnly/System attribute
+                    if (hadNTFSProtection)
+                    {
+                        ApplyNTFSProtection(lockedFilePath);
+                    }
+                    lblStatus.Text = "Incorrect password!";
+                    lblStatus.ForeColor = System.Drawing.Color.Red;
                     lblStatus.Visible = true;
-                    lblStatus.ForeColor = Color.Red;
-                    lblStatus.Text = "Status: Incorrect Password!";
-                    MessageBox.Show("Incorrect Password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Incorrect password! Please enter the correct password.", "Authentication Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                File.SetAttributes(keyFilePath, FileAttributes.Hidden); // Remove ReadOnly/System attribute
+                if (hadNTFSProtection)
+                {
+                    ApplyNTFSProtection(lockedFilePath);
+                }
+                lblStatus.Text = "Error validating password.";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
                 lblStatus.Visible = true;
-                lblStatus.ForeColor = Color.Red;
-                lblStatus.Text = "Status: Error occurred!";
-                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error validating password: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                progressBarLoading.Visible = false;
             }
         }
 
-        private static string EncryptData(string text, string key)
-        {
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(key));
-                aes.IV = new byte[16]; // Default IV (all zeros)
 
-                using (MemoryStream ms = new MemoryStream())
-                using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+        private bool IsPasswordValid(string encryptedFilePath, byte[] key)
+        {
+            // Create a temporary file to work with
+            string tempFilePath = Path.GetTempFileName();
+
+            try
+            {
+                // Read the original encrypted file, excluding the recovery information
+                byte[] fileData = File.ReadAllBytes(encryptedFilePath);
+
+                // The recovery information is 32 bytes at the end
+                int recoveryInfoSize = 32; // Adjust this if you changed the size
+
+                // Check if we might have recovery info appended
+                if (fileData.Length > recoveryInfoSize)
                 {
-                    using (StreamWriter sw = new StreamWriter(cs))
+                    // Remove potential recovery info - write only the encrypted folder data
+                    int actualDataSize = fileData.Length - recoveryInfoSize;
+                    File.WriteAllBytes(tempFilePath, fileData.Take(actualDataSize).ToArray());
+                }
+                else
+                {
+                    // No recovery info, use the original file
+                    File.Copy(encryptedFilePath, tempFilePath, true);
+                }
+
+                using (FileStream fsInput = new FileStream(tempFilePath, FileMode.Open))
+                {
+                    using (Aes aes = Aes.Create())
                     {
-                        sw.Write(text);
+                        aes.Key = key;
+                        byte[] iv = new byte[aes.IV.Length];
+
+                        // Read IV from the encrypted file
+                        if (fsInput.Length < iv.Length)
+                        {
+                            return false; // File is too small to be valid
+                        }
+
+                        fsInput.Read(iv, 0, iv.Length);
+                        aes.IV = iv;
+
+                        // Try to read the zip header to verify if decryption works correctly
+                        using (CryptoStream csDecrypt = new CryptoStream(fsInput, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                        {
+                            try
+                            {
+                                // Zip files start with PK header (0x504B)
+                                byte[] header = new byte[4];
+                                int bytesRead = csDecrypt.Read(header, 0, 4);
+
+                                // Check if we read the expected number of bytes and if they start with PK
+                                return bytesRead == 4 && header[0] == 0x50 && header[1] == 0x4B;
+                            }
+                            catch
+                            {
+                                return false; // If we can't decrypt, password is invalid
+                            }
+                        }
                     }
-                    return Convert.ToBase64String(ms.ToArray());
+                }
+            }
+            catch
+            {
+                return false; // Any exception means validation failed
+            }
+            finally
+            {
+                // Clean up temp file
+                if (File.Exists(tempFilePath))
+                {
+                    File.Delete(tempFilePath);
                 }
             }
         }
-        private byte[] EncryptFile(byte[] data, byte[] key)
+        private void ChangePassword(string lockedFilePath, string oldPassword, string newPassword)
         {
+            string tempFolder = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(lockedFilePath));
+            string tempFile = Path.GetTempFileName();
+
+            try
+            {
+                // Clear any existing temp folder
+                if (Directory.Exists(tempFolder))
+                    Directory.Delete(tempFolder, true);
+
+                Directory.CreateDirectory(tempFolder);
+
+                // Get recovery email if it exists
+                string recoveryEmail = "";
+                string recoveryEmailFilePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "UCUFolderLocker",
+                    "recovery_email.txt");
+
+                if (File.Exists(recoveryEmailFilePath))
+                {
+                    recoveryEmail = File.ReadAllText(recoveryEmailFilePath);
+                }
+
+                // Decrypt with old password
+                byte[] oldKey = GenerateKey(oldPassword);
+                DecryptAndExtractFolder(lockedFilePath, tempFolder, oldKey);
+
+                // Create a new lock file (don't overwrite the original yet)
+                byte[] newKey = GenerateKey(newPassword);
+                EncryptFolder(tempFolder, tempFile, newKey);
+
+                // If we have recovery info, add it back
+                if (!string.IsNullOrEmpty(recoveryEmail))
+                {
+                    AppendRecoveryInfo(tempFile, newPassword, recoveryEmail);
+                }
+
+                // Replace the original file with our new one
+                if (File.Exists(lockedFilePath))
+                    File.Delete(lockedFilePath);
+
+                File.Move(tempFile, lockedFilePath);
+
+                // Cleanup
+                Directory.Delete(tempFolder, true);
+            }
+            catch (Exception ex)
+            {
+                // Clean up any temp files
+                if (File.Exists(tempFile))
+                    File.Delete(tempFile);
+
+                throw new Exception("Failed to change password: " + ex.Message);
+            }
+        }
+
+        // Add this method to append recovery information
+        private void AppendRecoveryInfo(string lockFilePath, string password, string recoveryEmail)
+        {
+            try
+            {
+                // Encrypt the password using the recovery email as the key
+                byte[] emailKey = GenerateKey(recoveryEmail);
+                using (Aes aes = Aes.Create())
+                {
+                    aes.Key = emailKey;
+                    aes.GenerateIV();
+
+                    byte[] iv = aes.IV;
+                    byte[] encryptedPassword;
+
+                    // Encrypt the password
+                    using (MemoryStream msEncrypt = new MemoryStream())
+                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                    using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                    {
+                        swEncrypt.Write(password);
+                        swEncrypt.Flush();
+                        csEncrypt.FlushFinalBlock();
+                        encryptedPassword = msEncrypt.ToArray();
+                    }
+
+                    // Write IV + encrypted password to the end of the file
+                    using (FileStream fs = new FileStream(lockFilePath, FileMode.Append))
+                    {
+                        fs.Write(iv, 0, iv.Length);
+                        fs.Write(encryptedPassword, 0, encryptedPassword.Length);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to add recovery information: " + ex.Message);
+            }
+        }
+
+        private void EncryptFolder(string sourceFolder, string destinationFile, byte[] key)
+        {
+            using (FileStream fsOutput = new FileStream(destinationFile, FileMode.Create))
             using (Aes aes = Aes.Create())
             {
                 aes.Key = key;
-                aes.GenerateIV(); // IV is necessary for AES
+                aes.GenerateIV();
+                fsOutput.Write(aes.IV, 0, aes.IV.Length);
 
-                using (MemoryStream ms = new MemoryStream())
+                using (CryptoStream csEncrypt = new CryptoStream(fsOutput, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                using (ZipArchive zipArchive = new ZipArchive(csEncrypt, ZipArchiveMode.Create))
                 {
-                    ms.Write(aes.IV, 0, aes.IV.Length);
-                    using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                    foreach (string filePath in Directory.GetFiles(sourceFolder, "*", SearchOption.AllDirectories))
                     {
-                        cs.Write(data, 0, data.Length);
+                        string relativePath = Path.GetRelativePath(sourceFolder, filePath);
+                        zipArchive.CreateEntryFromFile(filePath, relativePath);
                     }
-                    return ms.ToArray();
                 }
             }
         }
 
+        private void RemoveNTFSProtection(string filePath)
+        {
+            try
+            {
+                FileInfo dInfo = new FileInfo(filePath);
+                FileSecurity fileSecurity = dInfo.GetAccessControl();
 
+                // Check if the file has NTFS protection
+                if (!fileSecurity.AreAccessRulesProtected)
+                {
+                    return;
+                }
 
+                // Restore inherited permissions
+                fileSecurity.SetAccessRuleProtection(false, true);
+
+                // Remove explicit deny rules for everyone
+                AuthorizationRuleCollection rules = fileSecurity.GetAccessRules(true, false, typeof(SecurityIdentifier));
+                foreach (FileSystemAccessRule rule in rules)
+                {
+                    if (rule.AccessControlType == AccessControlType.Deny)
+                    {
+                        fileSecurity.RemoveAccessRule(rule);
+                    }
+                }
+
+                dInfo.SetAccessControl(fileSecurity);
+                //MessageBox.Show("NTFS protection removed successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show("Error removing NTFS protection: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ApplyNTFSProtection(string filePath)
+        {
+            try
+            {
+                FileInfo dInfo = new FileInfo(filePath);
+
+                FileSecurity fileSecurity = dInfo.GetAccessControl();
+
+                // Remove existing permissions
+                fileSecurity.SetAccessRuleProtection(true, false);
+
+                // Deny delete, move, and copy for everyone
+                fileSecurity.AddAccessRule(new FileSystemAccessRule(
+                    new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                    FileSystemRights.Delete | FileSystemRights.WriteData | FileSystemRights.FullControl,
+                    AccessControlType.Deny
+                ));
+
+                dInfo.SetAccessControl(fileSecurity);
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show("Error applying NTFS protection: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private bool CheckIfHasNTFSProtection(string filePath)
+        {
+            try
+            {
+                FileInfo fileInfo = new FileInfo(filePath);
+                FileSecurity fileSecurity = fileInfo.GetAccessControl();
+
+                // Check if access rule protection is enabled (inheritance disconnected)
+                bool isProtected = fileSecurity.AreAccessRulesProtected;
+                if (!isProtected)
+                    return false;
+
+                // Get the access rules
+                AuthorizationRuleCollection rules = fileSecurity.GetAccessRules(true, true, typeof(SecurityIdentifier));
+
+                // Check for the specific deny rule for everyone (WorldSid)
+                foreach (FileSystemAccessRule rule in rules)
+                {
+                    SecurityIdentifier sid = rule.IdentityReference as SecurityIdentifier;
+                    if (sid != null && sid.IsWellKnown(WellKnownSidType.WorldSid))
+                    {
+                        // Check if this is the deny rule for Delete, WriteData, and FullControl
+                        if (rule.AccessControlType == AccessControlType.Deny &&
+                            (rule.FileSystemRights & (FileSystemRights.Delete | FileSystemRights.WriteData | FileSystemRights.FullControl)) != 0)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception)
+            {
+                // If there's an error checking the permissions, assume it's not protected
+                return false;
+            }
+        }
     }
 }

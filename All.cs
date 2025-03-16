@@ -78,23 +78,51 @@ namespace UCUFolderLocker
 
             try
             {
+                // First search for .lock files in the current directory
+                foreach (var lockFile in Directory.GetFiles(rootPath, "*.lock"))
+                {
+                    try
+                    {
+                        string folderName = Path.GetFileNameWithoutExtension(lockFile);
+
+                        count++;
+                        ListViewItem item = new ListViewItem(count.ToString()); // Row number
+                        item.SubItems.Add(folderName); // Original folder name (without .lock extension)
+                        item.SubItems.Add(rootPath); // Directory path
+                        lstLockedFolders.Items.Add(item);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // Skip files without permission
+                        continue;
+                    }
+                }
+
+                // Then search subdirectories one by one to handle permission errors
                 foreach (var dir in Directory.GetDirectories(rootPath))
                 {
                     try
                     {
-                        // Check if the folder is locked
-                        if (Directory.GetFiles(dir, "*.locked").Any() || File.Exists(Path.Combine(dir, "lock.key")))
+                        // Look for .lock files in each subdirectory
+                        foreach (var lockFile in Directory.GetFiles(dir, "*.lock"))
                         {
+                            string folderName = Path.GetFileNameWithoutExtension(lockFile);
+
                             count++;
                             ListViewItem item = new ListViewItem(count.ToString()); // Row number
-                            item.SubItems.Add(Path.GetFileName(dir)); // Folder name
-                            item.SubItems.Add(dir); // Folder path
+                            item.SubItems.Add(folderName); // Original folder name (without .lock extension)
+                            item.SubItems.Add(dir); // Directory path
                             lstLockedFolders.Items.Add(item);
                         }
                     }
                     catch (UnauthorizedAccessException)
                     {
-                        // Skip folders without permission
+                        // Skip directories without permission
+                        continue;
+                    }
+                    catch (Exception)
+                    {
+                        // Skip other errors for individual directories
                         continue;
                     }
                 }

@@ -36,6 +36,8 @@
             buttonBrowse = new Button();
             lblStatus = new Label();
             progressBarLoading = new ProgressBar();
+            label2 = new Label();
+            txtRecoveryEmail = new TextBox();
             panel1.SuspendLayout();
             SuspendLayout();
             // 
@@ -67,7 +69,7 @@
             btnSend.FlatStyle = FlatStyle.Flat;
             btnSend.Font = new Font("Segoe UI Semibold", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnSend.ForeColor = Color.White;
-            btnSend.Location = new Point(149, 165);
+            btnSend.Location = new Point(148, 224);
             btnSend.Name = "btnSend";
             btnSend.Size = new Size(370, 50);
             btnSend.TabIndex = 13;
@@ -111,28 +113,47 @@
             // 
             lblStatus.AutoSize = true;
             lblStatus.Font = new Font("Segoe UI", 12F);
-            lblStatus.Location = new Point(27, 128);
+            lblStatus.Location = new Point(26, 187);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(268, 28);
+            lblStatus.Size = new Size(267, 28);
             lblStatus.TabIndex = 20;
-            lblStatus.Text = "Status: REvocery Successfully!";
+            lblStatus.Text = "Status: Recovery Successfully!";
             lblStatus.Visible = false;
-            lblStatus.Click += lblStatus_Click;
             // 
             // progressBarLoading
             // 
-            progressBarLoading.Location = new Point(148, 223);
+            progressBarLoading.Location = new Point(147, 282);
             progressBarLoading.Name = "progressBarLoading";
             progressBarLoading.Size = new Size(370, 29);
             progressBarLoading.Style = ProgressBarStyle.Marquee;
             progressBarLoading.TabIndex = 21;
             progressBarLoading.Visible = false;
             // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Font = new Font("Segoe UI", 12F);
+            label2.Location = new Point(27, 140);
+            label2.Name = "label2";
+            label2.Size = new Size(59, 28);
+            label2.TabIndex = 22;
+            label2.Text = "Email";
+            // 
+            // txtRecoveryEmail
+            // 
+            txtRecoveryEmail.Font = new Font("Segoe UI", 12F);
+            txtRecoveryEmail.Location = new Point(148, 140);
+            txtRecoveryEmail.Name = "txtRecoveryEmail";
+            txtRecoveryEmail.Size = new Size(370, 34);
+            txtRecoveryEmail.TabIndex = 23;
+            // 
             // ForgotForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(765, 464);
+            Controls.Add(label2);
+            Controls.Add(txtRecoveryEmail);
             Controls.Add(progressBarLoading);
             Controls.Add(lblStatus);
             Controls.Add(panel1);
@@ -158,5 +179,7 @@
         private Button buttonBrowse;
         private Label lblStatus;
         private ProgressBar progressBarLoading;
+        private Label label2;
+        private TextBox txtRecoveryEmail;
     }
 }
