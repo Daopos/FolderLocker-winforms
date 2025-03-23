@@ -49,9 +49,10 @@
             buttonBrowse.FlatStyle = FlatStyle.Flat;
             buttonBrowse.Font = new Font("Segoe UI", 11F);
             buttonBrowse.ForeColor = Color.White;
-            buttonBrowse.Location = new Point(583, 86);
+            buttonBrowse.Location = new Point(510, 64);
+            buttonBrowse.Margin = new Padding(3, 2, 3, 2);
             buttonBrowse.Name = "buttonBrowse";
-            buttonBrowse.Size = new Size(108, 38);
+            buttonBrowse.Size = new Size(94, 28);
             buttonBrowse.TabIndex = 9;
             buttonBrowse.Text = "Browse";
             buttonBrowse.UseVisualStyleBackColor = false;
@@ -60,18 +61,19 @@
             // lblFolderPath
             // 
             lblFolderPath.Font = new Font("Segoe UI", 12F);
-            lblFolderPath.Location = new Point(196, 90);
+            lblFolderPath.Location = new Point(172, 68);
+            lblFolderPath.Margin = new Padding(3, 2, 3, 2);
             lblFolderPath.Name = "lblFolderPath";
-            lblFolderPath.Size = new Size(370, 34);
+            lblFolderPath.Size = new Size(324, 29);
             lblFolderPath.TabIndex = 8;
             // 
             // labelPath
             // 
             labelPath.AutoSize = true;
             labelPath.Font = new Font("Segoe UI", 12F);
-            labelPath.Location = new Point(18, 90);
+            labelPath.Location = new Point(16, 68);
             labelPath.Name = "labelPath";
-            labelPath.Size = new Size(115, 28);
+            labelPath.Size = new Size(91, 21);
             labelPath.TabIndex = 7;
             labelPath.Text = "Folder Path:";
             // 
@@ -79,18 +81,19 @@
             // 
             labelPassword.AutoSize = true;
             labelPassword.Font = new Font("Segoe UI", 12F);
-            labelPassword.Location = new Point(18, 139);
+            labelPassword.Location = new Point(16, 104);
             labelPassword.Name = "labelPassword";
-            labelPassword.Size = new Size(97, 28);
+            labelPassword.Size = new Size(79, 21);
             labelPassword.TabIndex = 6;
             labelPassword.Text = "Password:";
             // 
             // txtPassword
             // 
             txtPassword.Font = new Font("Segoe UI", 12F);
-            txtPassword.Location = new Point(196, 139);
+            txtPassword.Location = new Point(172, 104);
+            txtPassword.Margin = new Padding(3, 2, 3, 2);
             txtPassword.Name = "txtPassword";
-            txtPassword.Size = new Size(370, 34);
+            txtPassword.Size = new Size(324, 29);
             txtPassword.TabIndex = 5;
             txtPassword.UseSystemPasswordChar = true;
             // 
@@ -98,18 +101,19 @@
             // 
             labelConfirmPassword.AutoSize = true;
             labelConfirmPassword.Font = new Font("Segoe UI", 12F);
-            labelConfirmPassword.Location = new Point(18, 186);
+            labelConfirmPassword.Location = new Point(16, 140);
             labelConfirmPassword.Name = "labelConfirmPassword";
-            labelConfirmPassword.Size = new Size(172, 28);
+            labelConfirmPassword.Size = new Size(140, 21);
             labelConfirmPassword.TabIndex = 4;
             labelConfirmPassword.Text = "Confirm Password:";
             // 
             // txtConfirmPassword
             // 
             txtConfirmPassword.Font = new Font("Segoe UI", 12F);
-            txtConfirmPassword.Location = new Point(196, 186);
+            txtConfirmPassword.Location = new Point(172, 140);
+            txtConfirmPassword.Margin = new Padding(3, 2, 3, 2);
             txtConfirmPassword.Name = "txtConfirmPassword";
-            txtConfirmPassword.Size = new Size(370, 34);
+            txtConfirmPassword.Size = new Size(324, 29);
             txtConfirmPassword.TabIndex = 3;
             txtConfirmPassword.UseSystemPasswordChar = true;
             // 
@@ -117,18 +121,19 @@
             // 
             labelRecovery.AutoSize = true;
             labelRecovery.Font = new Font("Segoe UI", 12F);
-            labelRecovery.Location = new Point(18, 238);
+            labelRecovery.Location = new Point(16, 178);
             labelRecovery.Name = "labelRecovery";
-            labelRecovery.Size = new Size(147, 28);
+            labelRecovery.Size = new Size(119, 21);
             labelRecovery.TabIndex = 2;
             labelRecovery.Text = "Recovery Email:";
             // 
             // txtRecoveryEmail
             // 
             txtRecoveryEmail.Font = new Font("Segoe UI", 12F);
-            txtRecoveryEmail.Location = new Point(196, 238);
+            txtRecoveryEmail.Location = new Point(172, 178);
+            txtRecoveryEmail.Margin = new Padding(3, 2, 3, 2);
             txtRecoveryEmail.Name = "txtRecoveryEmail";
-            txtRecoveryEmail.Size = new Size(370, 34);
+            txtRecoveryEmail.Size = new Size(324, 29);
             txtRecoveryEmail.TabIndex = 1;
             // 
             // buttonLock
@@ -137,9 +142,10 @@
             buttonLock.FlatStyle = FlatStyle.Flat;
             buttonLock.Font = new Font("Segoe UI Semibold", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
             buttonLock.ForeColor = Color.White;
-            buttonLock.Location = new Point(196, 356);
+            buttonLock.Location = new Point(172, 267);
+            buttonLock.Margin = new Padding(3, 2, 3, 2);
             buttonLock.Name = "buttonLock";
-            buttonLock.Size = new Size(370, 57);
+            buttonLock.Size = new Size(324, 43);
             buttonLock.TabIndex = 0;
             buttonLock.Text = "Lock Folder";
             buttonLock.UseVisualStyleBackColor = false;
@@ -151,8 +157,9 @@
             panel1.Controls.Add(label1);
             panel1.Dock = DockStyle.Top;
             panel1.Location = new Point(0, 0);
+            panel1.Margin = new Padding(3, 2, 3, 2);
             panel1.Name = "panel1";
-            panel1.Size = new Size(765, 63);
+            panel1.Size = new Size(669, 47);
             panel1.TabIndex = 10;
             // 
             // label1
@@ -161,9 +168,9 @@
             label1.FlatStyle = FlatStyle.Popup;
             label1.Font = new Font("Segoe UI", 19.8000011F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
             label1.ForeColor = Color.White;
-            label1.Location = new Point(4, 8);
+            label1.Location = new Point(4, 6);
             label1.Name = "label1";
-            label1.Size = new Size(276, 46);
+            label1.Size = new Size(218, 37);
             label1.TabIndex = 0;
             label1.Text = "LOCK A FOLDER";
             // 
@@ -171,18 +178,19 @@
             // 
             lblStatus.AutoSize = true;
             lblStatus.Font = new Font("Segoe UI", 11F);
-            lblStatus.Location = new Point(18, 318);
+            lblStatus.Location = new Point(16, 238);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(257, 25);
+            lblStatus.Size = new Size(202, 20);
             lblStatus.TabIndex = 11;
             lblStatus.Text = "Status: Recovery Successfully!";
             lblStatus.Visible = false;
             // 
             // progressBarLoading
             // 
-            progressBarLoading.Location = new Point(196, 419);
+            progressBarLoading.Location = new Point(172, 314);
+            progressBarLoading.Margin = new Padding(3, 2, 3, 2);
             progressBarLoading.Name = "progressBarLoading";
-            progressBarLoading.Size = new Size(370, 29);
+            progressBarLoading.Size = new Size(324, 22);
             progressBarLoading.Style = ProgressBarStyle.Marquee;
             progressBarLoading.TabIndex = 12;
             progressBarLoading.Visible = false;
@@ -190,9 +198,10 @@
             // btnTogglePassword
             // 
             btnTogglePassword.Image = Properties.Resources.hidden;
-            btnTogglePassword.Location = new Point(572, 144);
+            btnTogglePassword.Location = new Point(500, 108);
+            btnTogglePassword.Margin = new Padding(3, 2, 3, 2);
             btnTogglePassword.Name = "btnTogglePassword";
-            btnTogglePassword.Size = new Size(26, 23);
+            btnTogglePassword.Size = new Size(23, 25);
             btnTogglePassword.TabIndex = 13;
             btnTogglePassword.TabStop = false;
             btnTogglePassword.Click += btnTogglePassword_Click;
@@ -200,9 +209,10 @@
             // btnToggleConfirmPassword
             // 
             btnToggleConfirmPassword.Image = Properties.Resources.hidden;
-            btnToggleConfirmPassword.Location = new Point(572, 191);
+            btnToggleConfirmPassword.Location = new Point(500, 143);
+            btnToggleConfirmPassword.Margin = new Padding(3, 2, 3, 2);
             btnToggleConfirmPassword.Name = "btnToggleConfirmPassword";
-            btnToggleConfirmPassword.Size = new Size(26, 23);
+            btnToggleConfirmPassword.Size = new Size(23, 26);
             btnToggleConfirmPassword.TabIndex = 14;
             btnToggleConfirmPassword.TabStop = false;
             btnToggleConfirmPassword.Click += btnToggleConfirmPassword_Click;
@@ -210,18 +220,19 @@
             // chkNTFSProtection
             // 
             chkNTFSProtection.AutoSize = true;
-            chkNTFSProtection.Location = new Point(196, 283);
+            chkNTFSProtection.Location = new Point(172, 212);
+            chkNTFSProtection.Margin = new Padding(3, 2, 3, 2);
             chkNTFSProtection.Name = "chkNTFSProtection";
-            chkNTFSProtection.Size = new Size(138, 24);
+            chkNTFSProtection.Size = new Size(111, 19);
             chkNTFSProtection.TabIndex = 15;
             chkNTFSProtection.Text = "NTFS protection";
             chkNTFSProtection.UseVisualStyleBackColor = true;
             // 
             // Lock
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(765, 464);
+            ClientSize = new Size(669, 348);
             Controls.Add(chkNTFSProtection);
             Controls.Add(btnToggleConfirmPassword);
             Controls.Add(btnTogglePassword);
@@ -239,6 +250,7 @@
             Controls.Add(lblFolderPath);
             Controls.Add(buttonBrowse);
             FormBorderStyle = FormBorderStyle.FixedDialog;
+            Margin = new Padding(3, 2, 3, 2);
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "Lock";

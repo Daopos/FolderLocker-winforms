@@ -73,6 +73,16 @@ namespace UCUFolderLocker.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap arrow {
+            get {
+                object obj = ResourceManager.GetObject("arrow", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap eye {
             get {
                 object obj = ResourceManager.GetObject("eye", resourceCulture);
@@ -116,6 +126,26 @@ namespace UCUFolderLocker.Properties {
         internal static System.Drawing.Bitmap hidden {
             get {
                 object obj = ResourceManager.GetObject("hidden", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap info {
+            get {
+                object obj = ResourceManager.GetObject("info", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap reset_password {
+            get {
+                object obj = ResourceManager.GetObject("reset-password", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

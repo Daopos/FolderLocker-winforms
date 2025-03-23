@@ -46,18 +46,20 @@
             // txtNewPassword
             // 
             txtNewPassword.Font = new Font("Segoe UI", 12F);
-            txtNewPassword.Location = new Point(128, 108);
+            txtNewPassword.Location = new Point(112, 81);
+            txtNewPassword.Margin = new Padding(3, 2, 3, 2);
             txtNewPassword.Name = "txtNewPassword";
-            txtNewPassword.Size = new Size(186, 34);
+            txtNewPassword.Size = new Size(163, 29);
             txtNewPassword.TabIndex = 0;
             txtNewPassword.UseSystemPasswordChar = true;
             // 
             // txtConfirmPassword
             // 
             txtConfirmPassword.Font = new Font("Segoe UI", 12F);
-            txtConfirmPassword.Location = new Point(128, 176);
+            txtConfirmPassword.Location = new Point(112, 132);
+            txtConfirmPassword.Margin = new Padding(3, 2, 3, 2);
             txtConfirmPassword.Name = "txtConfirmPassword";
-            txtConfirmPassword.Size = new Size(186, 34);
+            txtConfirmPassword.Size = new Size(163, 29);
             txtConfirmPassword.TabIndex = 1;
             txtConfirmPassword.UseSystemPasswordChar = true;
             // 
@@ -67,9 +69,10 @@
             btnChangePassword_Click.FlatStyle = FlatStyle.Flat;
             btnChangePassword_Click.Font = new Font("Segoe UI Semibold", 10.8F, FontStyle.Bold);
             btnChangePassword_Click.ForeColor = Color.White;
-            btnChangePassword_Click.Location = new Point(128, 223);
+            btnChangePassword_Click.Location = new Point(112, 167);
+            btnChangePassword_Click.Margin = new Padding(3, 2, 3, 2);
             btnChangePassword_Click.Name = "btnChangePassword_Click";
-            btnChangePassword_Click.Size = new Size(186, 42);
+            btnChangePassword_Click.Size = new Size(163, 32);
             btnChangePassword_Click.TabIndex = 2;
             btnChangePassword_Click.Text = "Confirm";
             btnChangePassword_Click.UseVisualStyleBackColor = false;
@@ -79,9 +82,9 @@
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 12F);
-            label1.Location = new Point(124, 77);
+            label1.Location = new Point(108, 58);
             label1.Name = "label1";
-            label1.Size = new Size(141, 28);
+            label1.Size = new Size(115, 21);
             label1.TabIndex = 3;
             label1.Text = "New Password:";
             // 
@@ -89,9 +92,9 @@
             // 
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI", 12F);
-            label2.Location = new Point(124, 145);
+            label2.Location = new Point(108, 109);
             label2.Name = "label2";
-            label2.Size = new Size(174, 28);
+            label2.Size = new Size(141, 21);
             label2.TabIndex = 4;
             label2.Text = "Confirm password:";
             // 
@@ -101,9 +104,10 @@
             button1.FlatStyle = FlatStyle.Flat;
             button1.Font = new Font("Segoe UI Semibold", 10.8F, FontStyle.Bold);
             button1.ForeColor = Color.Black;
-            button1.Location = new Point(128, 283);
+            button1.Location = new Point(112, 212);
+            button1.Margin = new Padding(3, 2, 3, 2);
             button1.Name = "button1";
-            button1.Size = new Size(186, 42);
+            button1.Size = new Size(163, 32);
             button1.TabIndex = 5;
             button1.Text = "Cancel";
             button1.UseVisualStyleBackColor = false;
@@ -112,9 +116,10 @@
             // btnToggleConfirmPassword
             // 
             btnToggleConfirmPassword.Image = Properties.Resources.hidden;
-            btnToggleConfirmPassword.Location = new Point(320, 182);
+            btnToggleConfirmPassword.Location = new Point(280, 136);
+            btnToggleConfirmPassword.Margin = new Padding(3, 2, 3, 2);
             btnToggleConfirmPassword.Name = "btnToggleConfirmPassword";
-            btnToggleConfirmPassword.Size = new Size(26, 23);
+            btnToggleConfirmPassword.Size = new Size(23, 25);
             btnToggleConfirmPassword.TabIndex = 16;
             btnToggleConfirmPassword.TabStop = false;
             btnToggleConfirmPassword.Click += btnToggleConfirmPassword_Click;
@@ -122,9 +127,10 @@
             // btnTogglePassword
             // 
             btnTogglePassword.Image = Properties.Resources.hidden;
-            btnTogglePassword.Location = new Point(320, 114);
+            btnTogglePassword.Location = new Point(280, 86);
+            btnTogglePassword.Margin = new Padding(3, 2, 3, 2);
             btnTogglePassword.Name = "btnTogglePassword";
-            btnTogglePassword.Size = new Size(26, 23);
+            btnTogglePassword.Size = new Size(23, 24);
             btnTogglePassword.TabIndex = 17;
             btnTogglePassword.TabStop = false;
             btnTogglePassword.Click += btnTogglePassword_Click;
@@ -134,9 +140,9 @@
             label3.AutoSize = true;
             label3.Font = new Font("Segoe UI", 14.8F, FontStyle.Bold | FontStyle.Italic);
             label3.ForeColor = Color.White;
-            label3.Location = new Point(12, 12);
+            label3.Location = new Point(10, 9);
             label3.Name = "label3";
-            label3.Size = new Size(355, 35);
+            label3.Size = new Size(285, 28);
             label3.TabIndex = 18;
             label3.Text = "CHANGE PASSSWORD FORM";
             // 
@@ -146,15 +152,16 @@
             panel1.Controls.Add(label3);
             panel1.Dock = DockStyle.Top;
             panel1.Location = new Point(0, 0);
+            panel1.Margin = new Padding(3, 2, 3, 2);
             panel1.Name = "panel1";
-            panel1.Size = new Size(452, 60);
+            panel1.Size = new Size(396, 45);
             panel1.TabIndex = 19;
             // 
             // ChangePasswordForm
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(452, 363);
+            ClientSize = new Size(396, 279);
             Controls.Add(panel1);
             Controls.Add(btnTogglePassword);
             Controls.Add(btnToggleConfirmPassword);
@@ -164,6 +171,7 @@
             Controls.Add(btnChangePassword_Click);
             Controls.Add(txtConfirmPassword);
             Controls.Add(txtNewPassword);
+            Margin = new Padding(3, 2, 3, 2);
             MaximizeBox = false;
             Name = "ChangePasswordForm";
             StartPosition = FormStartPosition.CenterScreen;

@@ -22,9 +22,10 @@ namespace UCUFolderLocker
         private Form unlockForm;
         private Form forgotForm;
         private Form helpForm;
-            
+        private Form infoForm;
 
-           
+
+
         public MainForm(string lockFilePath = null)
         {
 
@@ -41,7 +42,7 @@ namespace UCUFolderLocker
             unlockForm = new UnlockForm();
             forgotForm = new ForgotForm();
             helpForm = new HelpForm();
-
+            infoForm = new Change();
 
             LoadForm(allForm, btnAllForm); // Default load
         }
@@ -111,6 +112,10 @@ namespace UCUFolderLocker
             LoadForm(helpForm, btnHelpForm); // Use stored instance
         }
 
+        private void btnInfo_Click(object sender, EventArgs e)
+        {
+            LoadForm(infoForm, btnInfoForm); // Use stored instance
+        }
 
     }
 }

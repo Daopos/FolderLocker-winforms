@@ -263,5 +263,5 @@ private void ApplyNTFSProtection(string filePath)
     }
 
 
-}
+    }
 }
