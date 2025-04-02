@@ -56,7 +56,7 @@
             // txtConfirmPassword
             // 
             txtConfirmPassword.Font = new Font("Segoe UI", 12F);
-            txtConfirmPassword.Location = new Point(112, 132);
+            txtConfirmPassword.Location = new Point(112, 136);
             txtConfirmPassword.Margin = new Padding(3, 2, 3, 2);
             txtConfirmPassword.Name = "txtConfirmPassword";
             txtConfirmPassword.Size = new Size(163, 29);
@@ -69,7 +69,7 @@
             btnChangePassword_Click.FlatStyle = FlatStyle.Flat;
             btnChangePassword_Click.Font = new Font("Segoe UI Semibold", 10.8F, FontStyle.Bold);
             btnChangePassword_Click.ForeColor = Color.White;
-            btnChangePassword_Click.Location = new Point(112, 167);
+            btnChangePassword_Click.Location = new Point(112, 171);
             btnChangePassword_Click.Margin = new Padding(3, 2, 3, 2);
             btnChangePassword_Click.Name = "btnChangePassword_Click";
             btnChangePassword_Click.Size = new Size(163, 32);
@@ -92,7 +92,7 @@
             // 
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI", 12F);
-            label2.Location = new Point(108, 109);
+            label2.Location = new Point(108, 113);
             label2.Name = "label2";
             label2.Size = new Size(141, 21);
             label2.TabIndex = 4;
@@ -104,7 +104,7 @@
             button1.FlatStyle = FlatStyle.Flat;
             button1.Font = new Font("Segoe UI Semibold", 10.8F, FontStyle.Bold);
             button1.ForeColor = Color.Black;
-            button1.Location = new Point(112, 212);
+            button1.Location = new Point(112, 216);
             button1.Margin = new Padding(3, 2, 3, 2);
             button1.Name = "button1";
             button1.Size = new Size(163, 32);
@@ -116,7 +116,7 @@
             // btnToggleConfirmPassword
             // 
             btnToggleConfirmPassword.Image = Properties.Resources.hidden;
-            btnToggleConfirmPassword.Location = new Point(280, 136);
+            btnToggleConfirmPassword.Location = new Point(280, 139);
             btnToggleConfirmPassword.Margin = new Padding(3, 2, 3, 2);
             btnToggleConfirmPassword.Name = "btnToggleConfirmPassword";
             btnToggleConfirmPassword.Size = new Size(23, 25);

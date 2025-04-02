@@ -204,18 +204,28 @@ namespace UCUFolderLocker
             }
         }
 
-
         private async Task SendRecoveryEmail(string email, string password)
         {
             await Task.Run(() =>
             {
                 try
                 {
+                    // Get the recovery code for this file
+                    string recoveryCode = GetRecoveryCodeForFile(selectedFolderPath);
+                    string recoveryCodeMessage = string.IsNullOrEmpty(recoveryCode) ?
+                        "No recovery code found for this folder." :
+                        $"Recovery Code: {recoveryCode}";
+
                     MailMessage mail = new MailMessage
                     {
                         From = new MailAddress("qma.mis.edu@gmail.com"),
-                        Subject = "Password Recovery - Folder Lock",
-                        Body = $"Dear User,\n\nWe received a request to recover your folder password. Please find your password below:\n\nPassword: {password}\n\nFor security reasons, we recommend changing your password.\n\nIf you did not request this recovery, please ignore this email.\n\nBest regards,\nIvan",
+                        Subject = "Folder Recovery",
+                        Body = $"Dear User,\n\nWe received a request to recover your folder password. Please find your information below:\n\n" +
+                               $"Password: {password}\n\n" +
+                               $"{recoveryCodeMessage}\n\n" +
+                               $"For security reasons, we recommend changing your password.\n\n" +
+                               $"If you did not request this recovery, please ignore this email.\n\n" +
+                               $"Best regards,\nIvan",
                         IsBodyHtml = false
                     };
 
@@ -233,6 +243,34 @@ namespace UCUFolderLocker
                     throw new Exception("Failed to send recovery email. Please try again later. Error: " + ex.Message);
                 }
             });
+        }
+
+        // New method to get recovery code for a file
+        private string GetRecoveryCodeForFile(string lockFilePath)
+        {
+            try
+            {
+                string folderName = Path.GetFileNameWithoutExtension(lockFilePath);
+                string recoveryFilePath = Path.Combine(recoveryCodesDirectory, $"{folderName}_recovery.dat");
+
+                if (!File.Exists(recoveryFilePath))
+                {
+                    return null; // No recovery file found
+                }
+
+                // Read recovery code from file
+                using (FileStream fs = new FileStream(recoveryFilePath, FileMode.Open))
+                using (BinaryReader reader = new BinaryReader(fs))
+                {
+                    int recoveryCodeLength = reader.ReadInt32();
+                    byte[] recoveryCodeBytes = reader.ReadBytes(recoveryCodeLength);
+                    return Encoding.UTF8.GetString(recoveryCodeBytes);
+                }
+            }
+            catch (Exception)
+            {
+                return null; // Error reading recovery code
+            }
         }
         private void RemoveNTFSProtection(string filePath)
         {
@@ -332,5 +370,243 @@ namespace UCUFolderLocker
                 return false;
             }
         }
+
+        private string recoveryCodesDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "UCUFolderLocker", "recovery_codes");
+        private void BtnUnlockWithRecovery_Click(object sender, EventArgs e)
+        {
+            selectedFolderPath = lblFolderPath.Text;
+            // Get the recovery code from the text box
+            //string recoveryCode = textRecovery.Text;
+
+            if (string.IsNullOrEmpty(selectedFolderPath))
+            {
+                MessageBox.Show("Please select a locked file first!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            //if (string.IsNullOrEmpty(recoveryCode))
+            //{
+            //    MessageBox.Show("Please enter your recovery code!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            //    return;
+            //}
+
+            //try
+            //{
+            //    // Get the original password using the recovery code
+            //    string password = GetPasswordFromRecoveryCode(recoveryCode, selectedFolderPath);
+
+            //    if (string.IsNullOrEmpty(password))
+            //    {
+            //        MessageBox.Show("Invalid recovery code or recovery information not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //        return;
+            //    }
+
+            //    // Use the retrieved password to unlock the folder - reuse your existing decrypt method
+            //    UnlockFolderWithPassword(password);
+
+            //    // Clear the recovery code field
+            //    //textRecovery.Text = "";
+            //}
+            //catch (Exception ex)
+            //{
+            //    MessageBox.Show("Error unlocking folder: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //}
+        }
+
+        // Get original password using recovery code
+        private string GetPasswordFromRecoveryCode(string recoveryCode, string lockFilePath)
+        {
+            string folderName = Path.GetFileNameWithoutExtension(lockFilePath);
+            string recoveryFilePath = Path.Combine(recoveryCodesDirectory, $"{folderName}_recovery.dat");
+
+            if (!File.Exists(recoveryFilePath))
+            {
+                throw new Exception($"Recovery file not found for {folderName}. Please make sure you're using the correct recovery code for this file.");
+            }
+
+            try
+            {
+                using (FileStream fs = new FileStream(recoveryFilePath, FileMode.Open))
+                using (BinaryReader reader = new BinaryReader(fs))
+                {
+                    // Read recovery code from file
+                    int recoveryCodeLength = reader.ReadInt32();
+                    byte[] savedRecoveryCodeBytes = reader.ReadBytes(recoveryCodeLength);
+                    string savedRecoveryCode = Encoding.UTF8.GetString(savedRecoveryCodeBytes);
+
+                    // Verify recovery code (case insensitive and ignore formatting)
+                    string cleanInputCode = recoveryCode.Replace("-", "").Trim().ToUpper();
+                    string cleanSavedCode = savedRecoveryCode.Replace("-", "").Trim().ToUpper();
+
+                    if (cleanSavedCode != cleanInputCode)
+                    {
+                        throw new Exception("Invalid recovery code. Please check and try again.");
+                    }
+
+                    // Read recovery key
+                    int keyLength = reader.ReadInt32();
+                    byte[] recoveryKey = reader.ReadBytes(keyLength);
+
+                    // Read encrypted password
+                    int encryptedPasswordLength = reader.ReadInt32();
+                    byte[] encryptedPassword = reader.ReadBytes(encryptedPasswordLength);
+
+                    // Decrypt the password
+                    return DecryptStringFromBytesTwo(encryptedPassword, recoveryKey);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error processing recovery code: " + ex.Message);
+            }
+        }
+
+        // This should match the decrypt function in the Lock class
+        private string DecryptStringFromBytesTwo(byte[] cipherText, byte[] key)
+        {
+            string plaintext = null;
+
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = key;
+
+                // Get the IV from the cipher text (first 16 bytes)
+                byte[] iv = new byte[aes.BlockSize / 8];
+                Array.Copy(cipherText, 0, iv, 0, iv.Length);
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+
+                using (MemoryStream msDecrypt = new MemoryStream(cipherText, iv.Length, cipherText.Length - iv.Length))
+                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                {
+                    plaintext = srDecrypt.ReadToEnd();
+                }
+            }
+
+            return plaintext;
+        }
+
+        // This should be your existing unlock method that uses the password
+        private void UnlockFolderWithPassword(string password)
+        {
+            try
+            {
+                // Check if NTFS protection exists before removing it
+                bool hadNTFSProtection = CheckIfHasNTFSProtection(selectedFolderPath);
+                if (hadNTFSProtection)
+                {
+                    RemoveNTFSProtection(selectedFolderPath);
+                }
+
+                // Generate key from password
+                byte[] key = GenerateKey(password);
+                string outputFolder = Path.Combine(
+                    Path.GetDirectoryName(selectedFolderPath),
+                    Path.GetFileNameWithoutExtension(selectedFolderPath));
+
+                // Call the updated decryption function
+                DecryptAndExtractFolder(selectedFolderPath, outputFolder, key);
+
+                // Delete the encrypted file
+                File.Delete(selectedFolderPath);
+
+                lblStatus.Text = "Folder unlocked successfully.";
+                lblStatus.ForeColor = System.Drawing.Color.Green;
+                lblStatus.Visible = true;
+
+                // Show success message
+                MessageBox.Show("Folder unlocked successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // Clear fields
+                //textRecovery.Clear();
+                lblFolderPath.Text = "";
+            }
+            catch (CryptographicException)
+            {
+                lblStatus.Text = "Error: Invalid password or corrupted file.";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                lblStatus.Visible = true;
+                throw new Exception("Invalid recovery code or password. Please try again.");
+            }
+            catch (Exception ex)
+            {
+                lblStatus.Text = "Error: Failed to unlock folder.";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                lblStatus.Visible = true;
+                throw new Exception("Failed to unlock folder: " + ex.Message);
+            }
+        }
+        private void DecryptAndExtractFolder(string encryptedFilePath, string destinationFolder, byte[] key)
+        {
+            // Create a temporary file to work with
+            string tempFilePath = Path.GetTempFileName();
+
+            try
+            {
+                // Read the original encrypted file, excluding the recovery information
+                byte[] fileData = File.ReadAllBytes(encryptedFilePath);
+
+                // The recovery information is 32 bytes (IV + encrypted password) at the end
+                // We need to remove it before decryption
+                int recoveryInfoSize = 32; // Adjust this if you changed the size
+                int actualDataSize = fileData.Length;
+
+                // Check if we might have recovery info appended
+                if (fileData.Length > recoveryInfoSize)
+                {
+                    // Remove potential recovery info - write only the encrypted folder data
+                    actualDataSize = fileData.Length - recoveryInfoSize;
+                    File.WriteAllBytes(tempFilePath, fileData.Take(actualDataSize).ToArray());
+                }
+                else
+                {
+                    // No recovery info, use the original file
+                    File.Copy(encryptedFilePath, tempFilePath, true);
+                }
+
+                // Now decrypt the cleaned file
+                using (FileStream fsInput = new FileStream(tempFilePath, FileMode.Open))
+                {
+                    using (Aes aes = Aes.Create())
+                    {
+                        aes.Key = key;
+                        byte[] iv = new byte[aes.IV.Length];
+
+                        // Read IV from the encrypted file
+                        fsInput.Read(iv, 0, iv.Length);
+                        aes.IV = iv;
+
+                        using (CryptoStream csDecrypt = new CryptoStream(fsInput, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                        using (ZipArchive zipArchive = new ZipArchive(csDecrypt, ZipArchiveMode.Read))
+                        {
+                            // Create folder as hidden
+                            if (!Directory.Exists(destinationFolder))
+                            {
+                                Directory.CreateDirectory(destinationFolder);
+                            }
+
+                            zipArchive.ExtractToDirectory(destinationFolder);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Decryption failed: " + ex.Message, ex);
+            }
+            finally
+            {
+                // Clean up temp file
+                if (File.Exists(tempFilePath))
+                {
+                    File.Delete(tempFilePath);
+                }
+            }
+        }
+
     }
+
+
 }

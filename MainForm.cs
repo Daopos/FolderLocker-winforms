@@ -24,6 +24,8 @@ namespace UCUFolderLocker
         private Form helpForm;
         private Form infoForm;
 
+        private Form permanentLockForm;
+
 
 
         public MainForm(string lockFilePath = null)
@@ -38,11 +40,11 @@ namespace UCUFolderLocker
             }
             // Initialize forms once
             allForm = new All();
-            lockForm = new Lock();
-            unlockForm = new UnlockForm();
-            forgotForm = new ForgotForm();
+            lockForm = new MainFormEncrypt();
             helpForm = new HelpForm();
             infoForm = new Change();
+
+            permanentLockForm = new MainFormPermanent();
 
             LoadForm(allForm, btnAllForm); // Default load
         }
@@ -97,16 +99,7 @@ namespace UCUFolderLocker
             LoadForm(lockForm, btnLockForm); // Use stored instance
         }
 
-        private void btnUnlockForm_Click(object sender, EventArgs e)
-        {
-            LoadForm(unlockForm, btnUnlockForm); // Use stored instance
-        }
-
-        private void btnForgotForm_Click(object sender, EventArgs e)
-        {
-            LoadForm(forgotForm, btnForgotForm); // Use stored instance
-        }
-
+     
         private void btnHelpForm_Click(object sender, EventArgs e)
         {
             LoadForm(helpForm, btnHelpForm); // Use stored instance
@@ -117,5 +110,9 @@ namespace UCUFolderLocker
             LoadForm(infoForm, btnInfoForm); // Use stored instance
         }
 
+        private void btnPermanentLockForm_Click(object sender, EventArgs e)
+        {
+            LoadForm(permanentLockForm, btnPermanentLockForm); // Use stored instance
+        }
     }
 }

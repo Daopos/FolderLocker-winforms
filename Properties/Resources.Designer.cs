@@ -83,6 +83,16 @@ namespace UCUFolderLocker.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap encrypted_data {
+            get {
+                object obj = ResourceManager.GetObject("encrypted-data", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap eye {
             get {
                 object obj = ResourceManager.GetObject("eye", resourceCulture);
@@ -156,6 +166,66 @@ namespace UCUFolderLocker.Properties {
         internal static System.Drawing.Bitmap Screenshot_2025_03_04_203142 {
             get {
                 object obj = ResourceManager.GetObject("Screenshot 2025-03-04 203142", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Screenshot_2025_04_02_204646 {
+            get {
+                object obj = ResourceManager.GetObject("Screenshot 2025-04-02 204646", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Screenshot_2025_04_02_204655 {
+            get {
+                object obj = ResourceManager.GetObject("Screenshot 2025-04-02 204655", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Screenshot_2025_04_02_204705 {
+            get {
+                object obj = ResourceManager.GetObject("Screenshot 2025-04-02 204705", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Screenshot_2025_04_02_204722 {
+            get {
+                object obj = ResourceManager.GetObject("Screenshot 2025-04-02 204722", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Screenshot_2025_04_02_204731 {
+            get {
+                object obj = ResourceManager.GetObject("Screenshot 2025-04-02 204731", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Screenshot_2025_04_02_220109 {
+            get {
+                object obj = ResourceManager.GetObject("Screenshot 2025-04-02 220109", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

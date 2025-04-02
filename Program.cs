@@ -13,6 +13,7 @@ namespace UCUFolderLocker
         [STAThread]
         static void Main(string[] args)
         {
+
             ApplicationConfiguration.Initialize();
             CheckAndRegisterFileAssociation();
 
@@ -37,7 +38,24 @@ namespace UCUFolderLocker
             }
             else
             {
-                Application.Run(new LoginForm());
+                // Check if LoginForm is already running
+                bool isLoginFormOpen = false;
+                foreach (Form openForm in Application.OpenForms)
+                {
+                    if (openForm is LoginForm)
+                    {
+                        isLoginFormOpen = true;
+                        break;
+                    }
+                }
+
+                if (!isLoginFormOpen)
+                {
+                    Application.Run(new LoginForm());
+                }
+                else
+                {
+                }
             }
         }
 

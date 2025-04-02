@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Unlock));
             txtPassword = new TextBox();
             btnUnlock = new Button();
             lblStatus = new Label();
@@ -102,6 +103,7 @@
             btnTogglePassword.SizeMode = PictureBoxSizeMode.CenterImage;
             btnTogglePassword.TabIndex = 3;
             btnTogglePassword.TabStop = false;
+            btnTogglePassword.Click += btnTogglePassword_Click;
             // 
             // progressBarLoading
             // 
@@ -137,6 +139,7 @@
             Controls.Add(txtPassword);
             Controls.Add(lblPasswordPrompt);
             FormBorderStyle = FormBorderStyle.FixedDialog;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             Name = "Unlock";
             StartPosition = FormStartPosition.CenterScreen;

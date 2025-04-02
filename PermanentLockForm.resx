@@ -117,16 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="label8.Text" xml:space="preserve">
-    <value>1. Choose what to unlock go to specific menu
-
-2. Select the locked folder or locked file.
-
-3. Enter the password or recovery code.
-
-4. Enter.
-
-5. Relock Feature: After unlocking, the Relock button appears. Click it to relock with the same credentials.
-    (Only work with the Locked Folder Menu)</value>
-  </data>
 </root>

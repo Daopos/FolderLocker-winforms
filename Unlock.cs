@@ -9,8 +9,9 @@ using System.Text;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
-using Microsoft.Win32; // Add this for SystemEvents
+using Microsoft.Win32;
 
 namespace UCUFolderLocker
 {
@@ -18,503 +19,613 @@ namespace UCUFolderLocker
     {
         private string lockFilePath;
         private string unlockedFolderPath;
-        private string originalFolderName; // Store original folder name
+        private string originalFolderName;
         private string password;
         private bool folderWasUnlocked = false;
-        private byte[] originalFileData; // Store the original file data for exact recreation
-        private System.Threading.Timer relockTimer; // Add timer for periodic checks
-        private bool hasNTFSProtection = false; // Track if the original file had NTFS protection
+        private byte[] originalFileData;
+        private System.Threading.Timer relockTimer;
+        private bool hasNTFSProtection = false;
+        private readonly string recoveryFilePath;
+        private readonly string backupFolderPath;
+        private CancellationTokenSource cts = new CancellationTokenSource();
+
+        // Progress reporting
+        private int totalFiles = 0;
+        private int processedFiles = 0;
 
         public Unlock(string filePath)
         {
             InitializeComponent();
             lockFilePath = filePath;
             lblPath.Text = $"Lock File Path: {lockFilePath}";
+            recoveryFilePath = Path.Combine(Path.GetTempPath(), "UCUFolderLockerRecovery.dat");
+            backupFolderPath = Path.Combine(Path.GetTempPath(), "UCUFolderLockerBackup");
 
-            // Add event handler for form closing
+            // Add event handlers
             this.FormClosing += Unlock_FormClosing;
 
-            // Register for system shutdown events
-            SystemEvents.SessionEnding += SystemEvents_SessionEnding;
-
-            // Create a timer to periodically save the state to allow recovery
-            relockTimer = new System.Threading.Timer(SaveRelockState, null, 30000, 30000); // Check every 30 seconds
+            // Create a timer for periodic state saving (every 30 seconds)
+            relockTimer = new System.Threading.Timer(SaveRelockState, null, 30000, 30000);
         }
 
-        // Handle system shutdown or logoff
-        private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
+        // Toggle password visibility
+        private void btnTogglePassword_Click(object sender, EventArgs e)
         {
-            // Perform emergency relock
-            if (folderWasUnlocked && originalFileData != null)
-            {
-                try
-                {
-                    EmergencyRelock();
-                }
-                catch
-                {
-                    // Cannot show message boxes during shutdown, just try our best
-                }
-            }
+            txtPassword.UseSystemPasswordChar = !txtPassword.UseSystemPasswordChar;
+            btnTogglePassword.Image = txtPassword.UseSystemPasswordChar ? Properties.Resources.hidden : Properties.Resources.eye;
         }
 
-        // Save relock information periodically
-        private void SaveRelockState(object state)
+        // Save relock information periodically for recovery
+        private async void SaveRelockState(object state)
         {
-            if (folderWasUnlocked && password != null && unlockedFolderPath != null)
-            {
-                try
-                {
-                    // Create a recovery file with the information needed to relock
-                    string recoveryPath = Path.Combine(Path.GetTempPath(), "UCUFolderLockerRecovery.dat");
+            if (!folderWasUnlocked || password == null || unlockedFolderPath == null) return;
 
-                    // Encrypt the recovery data
-                    using (Aes aes = Aes.Create())
+            try
+            {
+                await Task.Run(() => {
+                    try
                     {
-                        aes.Key = GenerateKey("UCUFolderLockerRecoveryKey"); // Use a fixed key for recovery
-                        aes.GenerateIV();
-
-                        using (FileStream fs = new FileStream(recoveryPath, FileMode.Create))
+                        // Encrypt the recovery data
+                        using (Aes aes = Aes.Create())
                         {
-                            // Write IV
-                            fs.Write(aes.IV, 0, aes.IV.Length);
+                            aes.Key = GenerateKey("UCUFolderLockerRecoveryKey"); // Fixed key for recovery
+                            aes.GenerateIV();
 
-                            using (CryptoStream cs = new CryptoStream(fs, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                            using (StreamWriter sw = new StreamWriter(cs))
+                            using (FileStream fs = new FileStream(recoveryFilePath, FileMode.Create))
                             {
-                                // Write recovery information
-                                sw.WriteLine(lockFilePath);
-                                sw.WriteLine(unlockedFolderPath);
-                                sw.WriteLine(originalFolderName);
-                                sw.WriteLine(password);
-                                sw.WriteLine(Convert.ToBase64String(originalFileData)); // Store original file data
-                                sw.WriteLine(hasNTFSProtection); // Store NTFS protection status
+                                // Write IV
+                                fs.Write(aes.IV, 0, aes.IV.Length);
+
+                                using (CryptoStream cs = new CryptoStream(fs, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                                using (StreamWriter sw = new StreamWriter(cs))
+                                {
+                                    // Write recovery information
+                                    sw.WriteLine(lockFilePath);
+                                    sw.WriteLine(unlockedFolderPath);
+                                    sw.WriteLine(originalFolderName);
+                                    sw.WriteLine(password);
+                                    sw.WriteLine(Convert.ToBase64String(originalFileData));
+                                    sw.WriteLine(hasNTFSProtection);
+                                }
                             }
                         }
+
+                        // Create backup of unlocked files if they don't exist
+                        if (Directory.Exists(unlockedFolderPath) && !Directory.Exists(backupFolderPath))
+                        {
+                            CreateBackupOfUnlockedFiles();
+                        }
                     }
-                }
-                catch
+                    catch
+                    {
+                        // Silent fail for background operation
+                    }
+                });
+            }
+            catch
+            {
+                // Handle any Task-related exceptions
+            }
+        }
+
+        private void CreateBackupOfUnlockedFiles()
+        {
+            try
+            {
+                // Create backup directory if it doesn't exist
+                if (!Directory.Exists(backupFolderPath))
                 {
-                    // Silent fail for background operation
+                    Directory.CreateDirectory(backupFolderPath);
+                }
+
+                // Clear any existing files
+                foreach (string file in Directory.GetFiles(backupFolderPath))
+                {
+                    File.Delete(file);
+                }
+
+                // Copy all files from unlocked folder to backup
+                foreach (string file in Directory.GetFiles(unlockedFolderPath))
+                {
+                    File.Copy(file, Path.Combine(backupFolderPath, Path.GetFileName(file)), true);
                 }
             }
+            catch
+            {
+                // Silent fail for backup operation
+            }
         }
 
-
-        // Emergency relock method for shutdown events
-        private void EmergencyRelock()
+        private async void btnUnlock_Click(object sender, EventArgs e)
         {
-            // Get the original lock file path (without .temp)
-            string originalLockPath = lockFilePath.EndsWith(".temp")
-                ? lockFilePath.Substring(0, lockFilePath.Length - 5)
-                : lockFilePath;
 
-            // Just restore the original file and protect it
-            File.WriteAllBytes(originalLockPath, originalFileData);
-
-            if (CheckIfHasNTFSProtection(lockFilePath))
+            // Reset cancellation token if needed
+            if (cts.IsCancellationRequested)
             {
-                ApplyNTFSProtection(originalLockPath);
+                cts.Dispose();
+                cts = new CancellationTokenSource();
             }
 
-            // We won't try to delete the unlocked folder during emergency shutdown
-            // as it might cause issues. The cleanup will be handled on next startup.
-        }
-
-        private void btnUnlock_Click(object sender, EventArgs e)
-        {
-            string lockedFilePath = lockFilePath;
-            if (string.IsNullOrEmpty(lockedFilePath))
+            // Validate inputs
+            if (string.IsNullOrEmpty(lockFilePath))
             {
-                MessageBox.Show("Please select a locked file!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                lblStatus.Text = "Unlock failed: No file selected.";
-                lblStatus.ForeColor = System.Drawing.Color.Red;
-                lblStatus.Visible = true;
+                ShowError("Please select a locked file!");
                 return;
             }
 
             if (string.IsNullOrEmpty(txtPassword.Text))
             {
-                MessageBox.Show("Please enter the password!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                lblStatus.Text = "Unlock failed: No password entered.";
-                lblStatus.ForeColor = System.Drawing.Color.Red;
-                lblStatus.Visible = true;
+                ShowError("Please enter the password!");
                 return;
             }
 
             // Store password for relock
             password = txtPassword.Text;
+
+            // Update UI for loading state
+            progressBarLoading.Value = 0;
+            progressBarLoading.Style = ProgressBarStyle.Marquee;
             progressBarLoading.Visible = true;
+            btnUnlock.Enabled = false;
+            lblStatus.Text = "Preparing to unlock...";
+            lblStatus.ForeColor = System.Drawing.Color.Blue;
+            lblStatus.Visible = true;
 
-            // Check if NTFS protection exists before removing it
-            bool hadNTFSProtection = CheckIfHasNTFSProtection(lockedFilePath);
-
-            // Store for later use when relocking
-            hasNTFSProtection = hadNTFSProtection;
-
-            // First remove NTFS protection if it exists, before attempting to read the file
-            if (hadNTFSProtection)
-            {
-                try
-                {
-                    RemoveNTFSProtection(lockedFilePath);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error removing NTFS protection: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    lblStatus.Text = "Error: Cannot remove NTFS protection.";
-                    lblStatus.ForeColor = System.Drawing.Color.Red;
-                    lblStatus.Visible = true;
-                    progressBarLoading.Visible = false;
-                    return;
-                }
-            }
-
-            // Now try to read the file after protection is removed
             try
             {
-                originalFileData = File.ReadAllBytes(lockedFilePath);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error reading lock file: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                lblStatus.Text = "Error: Cannot read lock file.";
-                lblStatus.ForeColor = System.Drawing.Color.Red;
-                lblStatus.Visible = true;
-                progressBarLoading.Visible = false;
+                ControlBox = false; // Prevent closing during relock
 
-                // If we had removed NTFS protection but still failed, try to reapply it
-                if (hadNTFSProtection)
-                {
+                await Task.Run(async () => {
                     try
                     {
-                        ApplyNTFSProtection(lockedFilePath);
+                        // Check if NTFS protection exists before removing it
+                        hasNTFSProtection = CheckIfHasNTFSProtection(lockFilePath);
+
+                        UpdateStatusSafe("Checking file protection...");
+
+                        // First remove NTFS protection if it exists
+                        if (hasNTFSProtection)
+                        {
+                            UpdateStatusSafe("Removing file protection...");
+                            RemoveNTFSProtection(lockFilePath);
+                        }
+
+                        // Now try to read the file
+                        UpdateStatusSafe("Reading lock file...");
+                        originalFileData = File.ReadAllBytes(lockFilePath);
+                        long fileSizeKB = originalFileData.Length / 1024;
+                        UpdateStatusSafe($"Lock file size: {fileSizeKB} KB");
+
+                        originalFolderName = Path.GetFileNameWithoutExtension(lockFilePath);
+                        string destinationFolder = Path.Combine(Path.GetDirectoryName(lockFilePath), originalFolderName);
+                        unlockedFolderPath = destinationFolder; // Store for relock
+
+                        UpdateStatusSafe("Decrypting and extracting files...");
+
+                        byte[] key = GenerateKey(txtPassword.Text);
+                        int fileCount = await DecryptAndExtractFolderAsync(lockFilePath, destinationFolder, key, cts.Token);
+
+                        // Make the folder visible
+                        DirectoryInfo dirInfo = new DirectoryInfo(destinationFolder);
+                        if ((dirInfo.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
+                        {
+                            dirInfo.Attributes &= ~FileAttributes.Hidden;
+                        }
+
+                        // Rename lock file to a temporary filename
+                        string tempLockFile = lockFilePath + ".temp";
+                        if (File.Exists(tempLockFile))
+                            File.Delete(tempLockFile);
+
+                        File.Move(lockFilePath, tempLockFile);
+                        // Hide the temporary file
+                        File.SetAttributes(tempLockFile, File.GetAttributes(tempLockFile) | FileAttributes.Hidden);
+                        lockFilePath = tempLockFile; // Update the path
+
+                        folderWasUnlocked = true;
+                        UpdateStatusSafe($"Folder unlocked successfully: {fileCount} files extracted.", System.Drawing.Color.Green);
+
+                        // Create backup immediately after successful unlock
+                        CreateBackupOfUnlockedFiles();
+                        SaveRelockState(null);
+
+                        // Open the folder in Explorer
+                        this.Invoke((MethodInvoker)delegate {
+                            try
+                            {
+                                Process.Start("explorer.exe", destinationFolder);
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine("Failed to open folder: " + ex.Message);
+                            }
+
+                            //// Update message to indicate that the folder will not be automatically locked
+                            //MessageBox.Show("Folder unlocked successfully! It will remain unlocked even if the system shuts down. It will only be locked when you close this window.",
+                            //    "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        });
                     }
-                    catch { /* Ignore errors when trying to restore protection */ }
-                }
-                return;
-            }
-
-            originalFolderName = Path.GetFileNameWithoutExtension(lockedFilePath);
-            string destinationFolder = Path.Combine(Path.GetDirectoryName(lockedFilePath), originalFolderName);
-            unlockedFolderPath = destinationFolder; // Store for relock
-
-            try
-            {
-                byte[] key = GenerateKey(txtPassword.Text);
-                DecryptAndExtractFolder(lockedFilePath, destinationFolder, key);
-
-                // Make the folder visible but store that we should hide it when relocking
-                DirectoryInfo dirInfo = new DirectoryInfo(destinationFolder);
-                if ((dirInfo.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
-                {
-                    // Remove hidden attribute for user access
-                    dirInfo.Attributes &= ~FileAttributes.Hidden;
-                }
-
-                // Instead, rename it to a temporary filename
-                string tempLockFile = lockedFilePath + ".temp";
-                if (File.Exists(tempLockFile))
-                    File.Delete(tempLockFile);
-                File.Move(lockedFilePath, tempLockFile);
-                // Hide the temporary file so it can't be easily deleted
-                File.SetAttributes(tempLockFile, File.GetAttributes(tempLockFile) | FileAttributes.Hidden);
-                lockFilePath = tempLockFile; // Update the path
-
-                folderWasUnlocked = true;
-                lblStatus.Text = "Folder unlocked successfully.";
-                lblStatus.ForeColor = System.Drawing.Color.Green;
-                lblStatus.Visible = true;
-
-                // Disable the unlock button to prevent multiple clicks
-                btnUnlock.Enabled = false;
-                btnUnlock.Text = "Folder Unlocked";
-
-                // Save state immediately after successful unlock
-                SaveRelockState(null);
-
-                MessageBox.Show("Folder unlocked successfully! It will be automatically locked when you close this window.",
-                    "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (CryptographicException)
-            {
-                // Only reapply protection if it was there originally
-                if (hadNTFSProtection)
-                {
-                    ApplyNTFSProtection(lockedFilePath);
-                }
-                lblStatus.Text = "Wrong password entered.";
-                lblStatus.ForeColor = System.Drawing.Color.Red;
-                lblStatus.Visible = true;
-
-                MessageBox.Show("Wrong password entered. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    catch (OperationCanceledException)
+                    {
+                        UpdateStatusSafe("Operation was canceled.", System.Drawing.Color.Red);
+                    }
+                    catch (CryptographicException)
+                    {
+                        // Restore protection if needed
+                        if (hasNTFSProtection)
+                        {
+                            ApplyNTFSProtection(lockFilePath);
+                        }
+                        UpdateStatusSafe("Wrong password entered. Please try again.", System.Drawing.Color.Red);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Restore protection if needed
+                        if (hasNTFSProtection)
+                        {
+                            ApplyNTFSProtection(lockFilePath);
+                        }
+                        UpdateStatusSafe("Error unlocking folder: " + ex.Message, System.Drawing.Color.Red);
+                    }
+                }, cts.Token);
             }
             catch (Exception ex)
             {
-                // Only reapply protection if it was there originally
-                if (hadNTFSProtection)
-                {
-                    ApplyNTFSProtection(lockedFilePath);
-                }
-                lblStatus.Text = "Error unlocking folder.";
-                lblStatus.ForeColor = System.Drawing.Color.Red;
-                lblStatus.Visible = true;
-                MessageBox.Show("Error unlocking folder: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowError("Error in unlock operation: " + ex.Message);
             }
             finally
             {
-                progressBarLoading.Visible = false;
+                this.Invoke((MethodInvoker)delegate {
+                    progressBarLoading.Style = ProgressBarStyle.Blocks;
+                    progressBarLoading.Maximum = 100; // Add this line
+                    progressBarLoading.Value = 100;
+                    btnUnlock.Enabled = true;
+
+                    if (folderWasUnlocked)
+                    {
+                        btnUnlock.Text = "Folder Unlocked";
+                        btnUnlock.Enabled = false;
+                    }
+                });
+
+                ControlBox = true; // Prevent closing during relock
+
             }
         }
 
-        private void Unlock_FormClosing(object sender, FormClosingEventArgs e)
+        private async void Unlock_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // Clean up system event handler
-            SystemEvents.SessionEnding -= SystemEvents_SessionEnding;
-
-            // Dispose timer
+            // Clean up
             relockTimer?.Dispose();
             relockTimer = null;
 
-            // Delete recovery file if form is closing normally
+            // If folder wasn't unlocked or no data to relock, just clean up and exit
+            if (!folderWasUnlocked || originalFileData == null)
+            {
+                CleanupRecoveryFile();
+                return;
+            }
+
+            e.Cancel = true; // Temporarily cancel closing to show progress
+
+            // Update UI for relock process
+            progressBarLoading.Value = 0;
+            progressBarLoading.Style = ProgressBarStyle.Marquee;
+            progressBarLoading.Visible = true;
+            lblStatus.Text = "Preparing to relock...";
+            lblStatus.ForeColor = System.Drawing.Color.Blue;
+            lblStatus.Visible = true;
+
+            bool relockSuccess = false;
+
             try
             {
-                string recoveryPath = Path.Combine(Path.GetTempPath(), "UCUFolderLockerRecovery.dat");
-                if (File.Exists(recoveryPath))
+                ControlBox = false; // Prevent closing during relock
+                // Create a new CancellationTokenSource for the relock operation
+                cts.Dispose();
+                cts = new CancellationTokenSource();
+
+                await Task.Run(async () => {
+                    try
+                    {
+                        // Find the folder even if it was moved
+                        string actualFolderPath = await FindFolderByNameAsync(originalFolderName);
+
+                        if (string.IsNullOrEmpty(actualFolderPath))
+                        {
+                            // If can't find, try the original path
+                            if (Directory.Exists(unlockedFolderPath))
+                            {
+                                actualFolderPath = unlockedFolderPath;
+                            }
+                            else
+                            {
+                                this.Invoke((MethodInvoker)delegate {
+                                    DialogResult result = MessageBox.Show(
+                                        "Cannot find the unlocked folder. It may have been deleted or moved to an unknown location.\n\n" +
+                                        "Do you want to continue without locking? A recovery file will be kept in case you need to relock later.",
+                                        "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+                                    if (result == DialogResult.Yes)
+                                    {
+                                        // Keep recovery file in this case and allow closing
+                                        relockSuccess = true;
+                                    }
+                                });
+
+                                if (relockSuccess)
+                                    return;
+                                else
+                                    throw new Exception("Unable to find the folder to relock.");
+                            }
+                        }
+
+                        // Update the path to where we found the folder
+                        unlockedFolderPath = actualFolderPath;
+
+                        UpdateStatusSafe("Checking for open files...");
+
+                        // Check if any files in the folder are in use
+                        List<string> openFiles = await GetOpenFilesAsync(unlockedFolderPath);
+                        if (openFiles.Count > 0)
+                        {
+                            string fileList = string.Join("\n", openFiles.Take(5));
+                            if (openFiles.Count > 5)
+                                fileList += $"\n... and {openFiles.Count - 5} more files";
+
+                            this.Invoke((MethodInvoker)delegate {
+                                MessageBox.Show(
+                                    $"Some files are still open and cannot be locked. Please close these files first:\n\n{fileList}",
+                                    "Open Files Detected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            });
+
+                            UpdateStatusSafe("Cannot relock: Files are in use.", System.Drawing.Color.Red);
+                            return;
+                        }
+
+                        // Check for subfolders
+                        if (Directory.GetDirectories(unlockedFolderPath).Length > 0)
+                        {
+                            this.Invoke((MethodInvoker)delegate {
+                                MessageBox.Show(
+                                   "The folder contains subfolders, which cannot be locked. Please remove them before closing.",
+                                   "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            });
+
+                            UpdateStatusSafe("Re-locking canceled: Contains subfolders.", System.Drawing.Color.Red);
+                            return;
+                        }
+
+                        // Get the original lock file path
+                        string originalLockPath = lockFilePath.EndsWith(".temp")
+                            ? lockFilePath.Substring(0, lockFilePath.Length - 5)
+                            : lockFilePath;
+
+                        // Check file stats for progress reporting
+                        string[] files = Directory.GetFiles(unlockedFolderPath);
+                        long totalSize = 0;
+                        foreach (string file in files)
+                        {
+                            totalSize += new FileInfo(file).Length;
+                        }
+
+                        UpdateStatusSafe($"Re-locking folder ({files.Length} files, {totalSize / 1024} KB)...");
+
+                        // Always create a fresh lock file when relocking
+                        byte[] key = GenerateKey(password);
+                        await CompressAndEncryptFolderAsync(unlockedFolderPath, originalLockPath, key, cts.Token);
+
+                        // Store recovery info at the end (from original file)
+                        if (originalFileData.Length >= 32)
+                        {
+                            byte[] recoveryData = originalFileData.Skip(originalFileData.Length - 32).Take(32).ToArray();
+                            using (FileStream fs = new FileStream(originalLockPath, FileMode.Append))
+                            {
+                                fs.Write(recoveryData, 0, recoveryData.Length);
+                            }
+                        }
+
+                        UpdateStatusSafe("Applying file protection...");
+
+                        // Apply NTFS protection if the original file had it
+                        if (hasNTFSProtection)
+                        {
+                            ApplyNTFSProtection(originalLockPath);
+                        }
+
+                        UpdateStatusSafe("Cleaning up...");
+
+                        try
+                        {
+                            await DeleteWithRetryAsync(unlockedFolderPath, true);
+                            if (File.Exists(lockFilePath) && lockFilePath.EndsWith(".temp"))
+                                await DeleteWithRetryAsync(lockFilePath, false);
+
+                            CleanupRecoveryFile();
+                            relockSuccess = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            UpdateStatusSafe("Warning: Could not clean up temporary files: " + ex.Message, System.Drawing.Color.Orange);
+                            // Still consider this a success, since the locked file was created
+                            relockSuccess = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        this.Invoke((MethodInvoker)delegate {
+                            DialogResult result = MessageBox.Show(
+                                "Error re-locking folder: " + ex.Message +
+                                "\n\nYour folder remains unlocked at: " + unlockedFolderPath +
+                                "\n\nA backup of your files has been saved at: " + backupFolderPath +
+                                "\n\nDo you want to continue closing the application?",
+                                "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error);
+
+                            if (result == DialogResult.Yes)
+                            {
+                                relockSuccess = true; // Allow closing despite error
+                            }
+                        });
+                    }
+                }, cts.Token);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Critical error during relock: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+
+                progressBarLoading.Style = ProgressBarStyle.Blocks;
+                progressBarLoading.Maximum = 100; // Add this line
+                progressBarLoading.Value = 100;
+                ControlBox = true; // Prevent closing during relock
+
+                if (relockSuccess)
                 {
-                    File.Delete(recoveryPath);
+                    // Show message box confirming successful relock
+                    MessageBox.Show(
+                        "Folder has been successfully locked!",
+                        "Folder Locked",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                    // Actually close the form now
+                    this.FormClosing -= Unlock_FormClosing;
+                    this.Close();
+                }
+            }
+        }
+
+        // Helper method to safely update status from a background thread
+        private void UpdateStatusSafe(string message, System.Drawing.Color? color = null)
+        {
+            if (this.IsDisposed) return;
+
+            this.Invoke((MethodInvoker)delegate {
+                lblStatus.Text = message;
+                if (color.HasValue)
+                    lblStatus.ForeColor = color.Value;
+
+                // Update progress bar if we have file processing info
+                if (totalFiles > 0 && processedFiles > 0)
+                {
+                    progressBarLoading.Style = ProgressBarStyle.Blocks;
+                    progressBarLoading.Maximum = totalFiles;
+                    progressBarLoading.Value = Math.Min(processedFiles, totalFiles);
+                }
+            });
+        }
+
+        // Helper method to show error messages consistently
+        private void ShowError(string message)
+        {
+            MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            lblStatus.Text = "Error: " + message;
+            lblStatus.ForeColor = System.Drawing.Color.Red;
+            lblStatus.Visible = true;
+            progressBarLoading.Visible = false;
+        }
+
+        // Clean up recovery file
+        private void CleanupRecoveryFile()
+        {
+            try
+            {
+                if (File.Exists(recoveryFilePath))
+                {
+                    File.Delete(recoveryFilePath);
                 }
             }
             catch
             {
                 // Ignore cleanup errors
             }
+        }
 
-            // If the folder was unlocked, relock it
-            if (folderWasUnlocked && originalFileData != null)
-            {
-                try
+        // Async method to check if any files in the folder are currently in use
+        private async Task<List<string>> GetOpenFilesAsync(string folderPath)
+        {
+            return await Task.Run(() => {
+                List<string> openFiles = new List<string>();
+
+                foreach (string filePath in Directory.GetFiles(folderPath))
                 {
-                    // Find the folder by name, even if it moved
-                    string actualFolderPath = FindFolderByName(originalFolderName);
-
-                    if (string.IsNullOrEmpty(actualFolderPath))
-                    {
-                        // If can't find, try the original path
-                        if (Directory.Exists(unlockedFolderPath))
-                        {
-                            actualFolderPath = unlockedFolderPath;
-                        }
-                        else
-                        {
-                            DialogResult result = MessageBox.Show(
-                                "Cannot find the unlocked folder. It may have been deleted or moved to an unknown location.\n\nDo you want to continue without locking?",
-                                "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-
-                            if (result == DialogResult.No)
-                            {
-                                e.Cancel = true; // Prevent form from closing
-                                return;
-                            }
-                            return; // Allow closing without locking
-                        }
-                    }
-
-                    // Update the path to where we found the folder
-                    unlockedFolderPath = actualFolderPath;
-
-                    // Show a loading message
-                    lblStatus.Text = "Checking for open files...";
-                    lblStatus.ForeColor = System.Drawing.Color.Blue;
-                    lblStatus.Visible = true;
-                    progressBarLoading.Visible = true;
-                    Application.DoEvents(); // Force UI update
-
-                    // Check if any files in the folder are in use
-                    List<string> openFiles = GetOpenFiles(unlockedFolderPath);
-                    if (openFiles.Count > 0)
-                    {
-                        string fileList = string.Join("\n", openFiles.Take(5)); // Show first 5 files
-                        if (openFiles.Count > 5)
-                            fileList += $"\n... and {openFiles.Count - 5} more files";
-
-                        DialogResult result = MessageBox.Show(
-                            $"Some files are still open and cannot be locked. Please close these files first:\n\n{fileList}",
-                            "Open Files Detected", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-
-                        lblStatus.Text = "Cannot relock: Files are in use.";
-                        lblStatus.ForeColor = System.Drawing.Color.Red;
-                        progressBarLoading.Visible = false;
-                        e.Cancel = true; // Prevent form from closing
-                        return;
-                    }
-
-                    lblStatus.Text = "Re-locking folder...";
-                    Application.DoEvents(); // Force UI update
-
-                    // Get the original lock file path (without .temp)
-                    string originalLockPath = lockFilePath.EndsWith(".temp")
-                        ? lockFilePath.Substring(0, lockFilePath.Length - 5)
-                        : lockFilePath;
-
-                    // Check if folder still contains only files and no subfolders
-                    if (Directory.GetDirectories(unlockedFolderPath).Length > 0)
-                    {
-                        MessageBox.Show(
-                       "The folder contains subfolders, which cannot be locked. Please remove them before closing.",
-                       "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-                        e.Cancel = true; // Prevent form from closing
-                        lblStatus.Text = "Re-locking canceled: Contains subfolders.";
-                        lblStatus.ForeColor = System.Drawing.Color.Red;
-                        progressBarLoading.Visible = false;
-                        return;
-                    }
-
-                    // but first check if files have been modified
-                    bool filesModified = CheckIfFilesModified();
-
-                    if (filesModified)
-                    {
-                        // Get the original lock file path (without .temp)
-                        string recoveryInfo = null;
-
-                        if (originalFileData.Length >= 32)
-                        {
-                            recoveryInfo = Convert.ToBase64String(
-                                originalFileData.Skip(originalFileData.Length - 32).Take(32).ToArray());
-                        }
-
-                        byte[] key = GenerateKey(password);
-
-                        CompressAndEncryptFolder(unlockedFolderPath, originalLockPath, key);
-
-                        if (recoveryInfo != null)
-                        {
-                            byte[] recoveryData = Convert.FromBase64String(recoveryInfo);
-                            using (FileStream fs = new FileStream(originalLockPath, FileMode.Append))
-                            {
-                                fs.Write(recoveryData, 0, recoveryData.Length);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        File.WriteAllBytes(originalLockPath, originalFileData);
-                    }
-
-                    // Only apply NTFS protection if the original file had it
-                    if (hasNTFSProtection)
-                    {
-                        ApplyNTFSProtection(originalLockPath);
-                    }
-
                     try
                     {
-                        DeleteWithRetry(unlockedFolderPath, true);
-                        if (File.Exists(lockFilePath) && lockFilePath.EndsWith(".temp"))
-                            DeleteWithRetry(lockFilePath, false);
+                        // Try to open the file with exclusive access
+                        using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                        {
+                            // File isn't locked if we get here
+                        }
                     }
-                    catch (Exception ex)
+                    catch (IOException)
                     {
-                        MessageBox.Show("Warning: Could not clean up temporary files: " + ex.Message,
-                            "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        // File is in use if an IOException occurs
+                        openFiles.Add(Path.GetFileName(filePath));
+                    }
+                    catch
+                    {
+                        // Other exceptions (access denied, etc.) - assume file might be in use
+                        openFiles.Add(Path.GetFileName(filePath));
                     }
                 }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error re-locking folder: " + ex.Message +
-                        "\n\nYour folder remains unlocked at: " + unlockedFolderPath,
-                        "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                finally
-                {
-                    progressBarLoading.Visible = false;
-                }
-            }
+
+                return openFiles;
+            });
         }
 
-        // Method to check if any files in the folder are currently in use
-        private List<string> GetOpenFiles(string folderPath)
+        // Async helper method to find a folder by name in common locations
+        private async Task<string> FindFolderByNameAsync(string folderName)
         {
-            List<string> openFiles = new List<string>();
-
-            foreach (string filePath in Directory.GetFiles(folderPath))
-            {
-                try
+            return await Task.Run(() => {
+                // First check if it's still in the original location
+                if (Directory.Exists(unlockedFolderPath))
                 {
-                    // Try to open the file with exclusive access
-                    using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-                    {
-                        // File isn't locked if we get here
-                        fs.Close();
-                    }
+                    return unlockedFolderPath;
                 }
-                catch (IOException)
+
+                // Check common locations
+                string[] commonLocations = new string[]
                 {
-                    // File is in use if an IOException occurs
-                    openFiles.Add(Path.GetFileName(filePath));
-                }
-                catch
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyMusic),
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    Path.GetDirectoryName(lockFilePath)
+                };
+
+                foreach (string location in commonLocations)
                 {
-                    // Other exceptions (access denied, etc.) - assume file might be in use
-                    openFiles.Add(Path.GetFileName(filePath));
-                }
-            }
-
-            return openFiles;
-        }
-
-        // Helper method to find a folder by name in common locations
-        private string FindFolderByName(string folderName)
-        {
-            // First check if it's still in the original location
-            if (Directory.Exists(unlockedFolderPath))
-            {
-                return unlockedFolderPath;
-            }
-
-            // Check common locations
-            string[] commonLocations = new string[]
-            {
-                Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
-                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-                Environment.GetFolderPath(Environment.SpecialFolder.MyMusic),
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                Path.GetDirectoryName(lockFilePath)
-            };
-
-            foreach (string location in commonLocations)
-            {
-                string potentialPath = Path.Combine(location, folderName);
-                if (Directory.Exists(potentialPath))
-                {
-                    return potentialPath;
-                }
-            }
-
-            // Search in all drives if not found in common locations
-            foreach (DriveInfo drive in DriveInfo.GetDrives())
-            {
-                if (drive.IsReady && drive.DriveType == DriveType.Fixed)
-                {
-                    string potentialPath = SearchFolderInDirectory(drive.RootDirectory.FullName, folderName);
-                    if (!string.IsNullOrEmpty(potentialPath))
+                    string potentialPath = Path.Combine(location, folderName);
+                    if (Directory.Exists(potentialPath))
                     {
                         return potentialPath;
                     }
                 }
-            }
 
-            return null; // Not found
+                // Search in all drives (limited search scope)
+                foreach (DriveInfo drive in DriveInfo.GetDrives())
+                {
+                    if (drive.IsReady && drive.DriveType == DriveType.Fixed)
+                    {
+                        string potentialPath = SearchFolderInDirectory(drive.RootDirectory.FullName, folderName);
+                        if (!string.IsNullOrEmpty(potentialPath))
+                        {
+                            return potentialPath;
+                        }
+                    }
+                }
+
+                return null; // Not found
+            });
         }
 
-        // Recursively search for folder in a directory (limited depth to avoid excessive searching)
+        // Recursively search for folder in a directory (limited depth)
         private string SearchFolderInDirectory(string directory, string folderName, int depth = 0)
         {
-            if (depth > 3) // Limit search depth to avoid excessive recursion
+            if (depth > 2) // Reduced search depth for better performance
                 return null;
 
             try
@@ -526,12 +637,11 @@ namespace UCUFolderLocker
                     return potentialPath;
                 }
 
-                // Check subdirectories (only common ones to avoid excessive searching)
+                // Check only common subdirectories
                 string[] commonSubdirs = { "Documents", "Downloads", "Desktop", "Users" };
                 foreach (string dir in Directory.GetDirectories(directory))
                 {
                     string dirName = Path.GetFileName(dir);
-                    // Only search common directories or ones that might contain user files
                     if (commonSubdirs.Contains(dirName) ||
                         dirName.StartsWith("User") ||
                         dirName.Equals(Environment.UserName))
@@ -544,118 +654,157 @@ namespace UCUFolderLocker
                     }
                 }
             }
-            catch (Exception)
+            catch
             {
-                // Ignore access errors, etc.
+                // Ignore access errors
             }
 
-            return null; // Not found
+            return null;
         }
 
-        private bool CheckIfFilesModified()
+        // Async method to compress and encrypt folders with progress reporting
+        private async Task CompressAndEncryptFolderAsync(string folderPath, string encryptedFilePath, byte[] key, CancellationToken token)
         {
-            string[] files = Directory.GetFiles(unlockedFolderPath);
+            await Task.Run(() => {
+                string[] files = Directory.GetFiles(folderPath);
+                totalFiles = files.Length;
+                processedFiles = 0;
 
-            if (files.Length == 0)
-                return true;
-
-            return true;
-        }
-
-        // Add this method to compress and encrypt folders for re-locking
-        private void CompressAndEncryptFolder(string folderPath, string encryptedFilePath, byte[] key)
-        {
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = key;
-                aes.GenerateIV(); // Generate IV for encryption
-
-                using (FileStream fsOutput = new FileStream(encryptedFilePath, FileMode.Create))
+                // Create the output directory if it doesn't exist
+                string outputDir = Path.GetDirectoryName(encryptedFilePath);
+                if (!Directory.Exists(outputDir))
                 {
-                    // Write IV to the encrypted file first
-                    fsOutput.Write(aes.IV, 0, aes.IV.Length);
+                    Directory.CreateDirectory(outputDir);
+                }
 
-                    using (CryptoStream csEncrypt = new CryptoStream(fsOutput, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                    using (ZipArchive zipArchive = new ZipArchive(csEncrypt, ZipArchiveMode.Create))
+                using (Aes aes = Aes.Create())
+                {
+                    aes.Key = key;
+                    aes.GenerateIV();
+
+                    using (FileStream fsOutput = new FileStream(encryptedFilePath, FileMode.Create))
                     {
-                        foreach (string file in Directory.GetFiles(folderPath))
+                        // Write IV
+                        fsOutput.Write(aes.IV, 0, aes.IV.Length);
+
+                        using (CryptoStream csEncrypt = new CryptoStream(fsOutput, aes.CreateEncryptor(), CryptoStreamMode.Write))
+                        using (ZipArchive zipArchive = new ZipArchive(csEncrypt, ZipArchiveMode.Create))
                         {
-                            zipArchive.CreateEntryFromFile(file, Path.GetFileName(file));
-                        }
-                    }
-                }
-            }
-        }
-
-        private void DecryptAndExtractFolder(string encryptedFilePath, string destinationFolder, byte[] key)
-        {
-            // Create a temporary file to work with
-            string tempFilePath = Path.GetTempFileName();
-
-            try
-            {
-                // Read the original encrypted file, excluding the recovery information
-                byte[] fileData = File.ReadAllBytes(encryptedFilePath);
-
-                // The recovery information is 32 bytes (IV + encrypted password) at the end
-                // We need to remove it before decryption
-                int recoveryInfoSize = 32; // Adjust this if you changed the size
-                int actualDataSize = fileData.Length;
-
-                // Check if we might have recovery info appended
-                if (fileData.Length > recoveryInfoSize)
-                {
-                    // Remove potential recovery info - write only the encrypted folder data
-                    actualDataSize = fileData.Length - recoveryInfoSize;
-                    File.WriteAllBytes(tempFilePath, fileData.Take(actualDataSize).ToArray());
-                }
-                else
-                {
-                    // No recovery info, use the original file
-                    File.Copy(encryptedFilePath, tempFilePath, true);
-                }
-
-                // Now decrypt the cleaned file
-                using (FileStream fsInput = new FileStream(tempFilePath, FileMode.Open))
-                {
-                    using (Aes aes = Aes.Create())
-                    {
-                        aes.Key = key;
-                        byte[] iv = new byte[aes.IV.Length];
-
-                        // Read IV from the encrypted file
-                        fsInput.Read(iv, 0, iv.Length);
-                        aes.IV = iv;
-
-                        using (CryptoStream csDecrypt = new CryptoStream(fsInput, aes.CreateDecryptor(), CryptoStreamMode.Read))
-                        using (ZipArchive zipArchive = new ZipArchive(csDecrypt, ZipArchiveMode.Read))
-                        {
-                            // Create folder as hidden
-                            if (!Directory.Exists(destinationFolder))
+                            foreach (string file in files)
                             {
-                                Directory.CreateDirectory(destinationFolder);
-                                File.SetAttributes(destinationFolder, FileAttributes.Hidden);
-                            }
+                                token.ThrowIfCancellationRequested();
 
-                            zipArchive.ExtractToDirectory(destinationFolder);
+                                zipArchive.CreateEntryFromFile(file, Path.GetFileName(file));
+                                processedFiles++;
+
+                                // Update status every 10 files or for progress
+                                if (processedFiles % 10 == 0 || processedFiles == totalFiles)
+                                {
+                                    UpdateStatusSafe($"Compressing files: {processedFiles}/{totalFiles}");
+                                }
+                            }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Decryption failed: " + ex.Message, ex);
-            }
-            finally
-            {
-                // Clean up temp file
-                if (File.Exists(tempFilePath))
-                {
-                    File.Delete(tempFilePath);
-                }
-            }
+            }, token);
         }
 
+        // Improved async decrypt and extract method with progress reporting
+        private async Task<int> DecryptAndExtractFolderAsync(string encryptedFilePath, string destinationFolder, byte[] key, CancellationToken token)
+        {
+            return await Task.Run(() => {
+                int fileCount = 0;
+                string tempFilePath = Path.GetTempFileName();
+
+                try
+                {
+                    // Read the original encrypted file
+                    byte[] fileData = File.ReadAllBytes(encryptedFilePath);
+
+                    // The recovery information is 32 bytes at the end
+                    int recoveryInfoSize = 32;
+                    int actualDataSize = fileData.Length;
+
+                    // Check if we have recovery info appended
+                    if (fileData.Length > recoveryInfoSize)
+                    {
+                        actualDataSize = fileData.Length - recoveryInfoSize;
+                        File.WriteAllBytes(tempFilePath, fileData.Take(actualDataSize).ToArray());
+                    }
+                    else
+                    {
+                        File.Copy(encryptedFilePath, tempFilePath, true);
+                    }
+
+                    // Now decrypt the cleaned file
+                    using (FileStream fsInput = new FileStream(tempFilePath, FileMode.Open))
+                    {
+                        using (Aes aes = Aes.Create())
+                        {
+                            aes.Key = key;
+                            byte[] iv = new byte[aes.IV.Length];
+
+                            // Read IV
+                            fsInput.Read(iv, 0, iv.Length);
+                            aes.IV = iv;
+
+                            using (CryptoStream csDecrypt = new CryptoStream(fsInput, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                            using (ZipArchive zipArchive = new ZipArchive(csDecrypt, ZipArchiveMode.Read))
+                            {
+                                // Create folder as hidden
+                                if (!Directory.Exists(destinationFolder))
+                                {
+                                    Directory.CreateDirectory(destinationFolder);
+                                    File.SetAttributes(destinationFolder, FileAttributes.Hidden);
+                                }
+
+                                // Get file count for progress reporting
+                                fileCount = zipArchive.Entries.Count;
+                                totalFiles = fileCount;
+                                processedFiles = 0;
+
+                                // Extract each file, counting as we go
+                                foreach (ZipArchiveEntry entry in zipArchive.Entries)
+                                {
+                                    token.ThrowIfCancellationRequested();
+
+                                    entry.ExtractToFile(Path.Combine(destinationFolder, entry.Name), true);
+                                    processedFiles++;
+
+                                    // Update status for progress
+                                    if (processedFiles % 10 == 0 || processedFiles == totalFiles)
+                                    {
+                                        UpdateStatusSafe($"Extracting files: {processedFiles}/{totalFiles}");
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    return fileCount;
+                }
+                catch (Exception ex)
+                {
+                    // Clean up temp file if it exists
+                    if (File.Exists(tempFilePath))
+                    {
+                        try { File.Delete(tempFilePath); } catch { }
+                    }
+
+                    throw new Exception("Decryption failed: " + ex.Message, ex);
+                }
+                finally
+                {
+                    // Clean up temp file
+                    if (File.Exists(tempFilePath))
+                    {
+                        try { File.Delete(tempFilePath); } catch { }
+                    }
+                }
+            }, token);
+        }
+
+        // Generate encryption key from password
         private static byte[] GenerateKey(string password)
         {
             using (SHA256 sha256 = SHA256.Create())
@@ -664,12 +813,13 @@ namespace UCUFolderLocker
             }
         }
 
+        // Remove NTFS protection
         private void RemoveNTFSProtection(string filePath)
         {
             try
             {
-                FileInfo dInfo = new FileInfo(filePath);
-                FileSecurity fileSecurity = dInfo.GetAccessControl();
+                FileInfo fileInfo = new FileInfo(filePath);
+                FileSecurity fileSecurity = fileInfo.GetAccessControl();
 
                 // Check if the file has NTFS protection
                 if (!fileSecurity.AreAccessRulesProtected)
@@ -690,21 +840,21 @@ namespace UCUFolderLocker
                     }
                 }
 
-                dInfo.SetAccessControl(fileSecurity);
+                fileInfo.SetAccessControl(fileSecurity);
             }
             catch (Exception ex)
             {
-                //MessageBox.Show("Error removing NTFS protection: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                throw new Exception("Error removing NTFS protection: " + ex.Message, ex);
             }
         }
 
+        // Apply NTFS protection
         private static void ApplyNTFSProtection(string filePath)
         {
             try
             {
-                FileInfo dInfo = new FileInfo(filePath);
-
-                FileSecurity fileSecurity = dInfo.GetAccessControl();
+                FileInfo fileInfo = new FileInfo(filePath);
+                FileSecurity fileSecurity = fileInfo.GetAccessControl();
 
                 // Remove existing permissions
                 fileSecurity.SetAccessRuleProtection(true, false);
@@ -716,14 +866,15 @@ namespace UCUFolderLocker
                     AccessControlType.Deny
                 ));
 
-                dInfo.SetAccessControl(fileSecurity);
+                fileInfo.SetAccessControl(fileSecurity);
             }
             catch (Exception ex)
             {
-                //MessageBox.Show("Error applying NTFS protection: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                throw new Exception("Error applying NTFS protection: " + ex.Message, ex);
             }
         }
 
+        // Check if a file has NTFS protection
         private static bool CheckIfHasNTFSProtection(string filePath)
         {
             try
@@ -731,7 +882,7 @@ namespace UCUFolderLocker
                 FileInfo fileInfo = new FileInfo(filePath);
                 FileSecurity fileSecurity = fileInfo.GetAccessControl();
 
-                // Check if access rule protection is enabled (inheritance disconnected)
+                // Check if access rule protection is enabled
                 bool isProtected = fileSecurity.AreAccessRulesProtected;
                 if (!isProtected)
                     return false;
@@ -739,13 +890,12 @@ namespace UCUFolderLocker
                 // Get the access rules
                 AuthorizationRuleCollection rules = fileSecurity.GetAccessRules(true, true, typeof(SecurityIdentifier));
 
-                // Check for the specific deny rule for everyone (WorldSid)
+                // Check for deny rule for everyone
                 foreach (FileSystemAccessRule rule in rules)
                 {
                     SecurityIdentifier sid = rule.IdentityReference as SecurityIdentifier;
                     if (sid != null && sid.IsWellKnown(WellKnownSidType.WorldSid))
                     {
-                        // Check if this is the deny rule for Delete, WriteData, and FullControl
                         if (rule.AccessControlType == AccessControlType.Deny &&
                             (rule.FileSystemRights & (FileSystemRights.Delete | FileSystemRights.WriteData | FileSystemRights.FullControl)) != 0)
                         {
@@ -756,33 +906,36 @@ namespace UCUFolderLocker
 
                 return false;
             }
-            catch (Exception)
+            catch
             {
                 return false;
             }
         }
 
-        private void DeleteWithRetry(string path, bool isDirectory, int maxRetries = 3)
+        // Delete file or directory with retry
+        private async Task DeleteWithRetryAsync(string path, bool isDirectory, int maxRetries = 3)
         {
-            for (int i = 0; i < maxRetries; i++)
-            {
-                try
+            await Task.Run(() => {
+                for (int i = 0; i < maxRetries; i++)
                 {
-                    if (isDirectory)
-                        Directory.Delete(path, true);
-                    else
-                        File.Delete(path);
+                    try
+                    {
+                        if (isDirectory)
+                            Directory.Delete(path, true);
+                        else
+                            File.Delete(path);
 
-                    return; // Success
+                        return; // Success
+                    }
+                    catch (IOException)
+                    {
+                        if (i < maxRetries - 1)
+                            Thread.Sleep(500); // Wait before retry
+                        else
+                            throw; // Rethrow on last attempt
+                    }
                 }
-                catch (IOException)
-                {
-                    if (i < maxRetries - 1)
-                        Thread.Sleep(500); // Wait before retry
-                    else
-                        throw; // Rethrow on last attempt
-                }
-            }
+            });
         }
     }
 }

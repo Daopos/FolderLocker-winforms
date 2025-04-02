@@ -17,6 +17,7 @@
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LoginForm));
             lblTitle = new Label();
             lblUsername = new Label();
             lblPassword = new Label();
@@ -51,18 +52,18 @@
             // lblUsername
             // 
             lblUsername.Font = new Font("Segoe UI", 12F);
-            lblUsername.Location = new Point(74, 88);
+            lblUsername.Location = new Point(66, 88);
             lblUsername.Name = "lblUsername";
-            lblUsername.Size = new Size(89, 19);
+            lblUsername.Size = new Size(98, 19);
             lblUsername.TabIndex = 1;
             lblUsername.Text = "Username:";
             // 
             // lblPassword
             // 
             lblPassword.Font = new Font("Segoe UI", 12F);
-            lblPassword.Location = new Point(83, 133);
+            lblPassword.Location = new Point(74, 133);
             lblPassword.Name = "lblPassword";
-            lblPassword.Size = new Size(80, 19);
+            lblPassword.Size = new Size(88, 19);
             lblPassword.TabIndex = 2;
             lblPassword.Text = "Password:";
             // 
@@ -115,7 +116,7 @@
             // 
             pictureBox1.BackgroundImageLayout = ImageLayout.Stretch;
             pictureBox1.Image = Properties.Resources.folder;
-            pictureBox1.Location = new Point(125, 14);
+            pictureBox1.Location = new Point(118, 12);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(38, 34);
             pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -127,7 +128,7 @@
             usernameInfo.Image = Properties.Resources.info;
             usernameInfo.Location = new Point(433, 93);
             usernameInfo.Name = "usernameInfo";
-            usernameInfo.Size = new Size(22, 20);
+            usernameInfo.Size = new Size(24, 20);
             usernameInfo.SizeMode = PictureBoxSizeMode.StretchImage;
             usernameInfo.TabIndex = 7;
             usernameInfo.TabStop = false;
@@ -137,7 +138,7 @@
             passwordInfo.Image = Properties.Resources.info;
             passwordInfo.Location = new Point(462, 137);
             passwordInfo.Name = "passwordInfo";
-            passwordInfo.Size = new Size(22, 20);
+            passwordInfo.Size = new Size(24, 20);
             passwordInfo.SizeMode = PictureBoxSizeMode.StretchImage;
             passwordInfo.TabIndex = 8;
             passwordInfo.TabStop = false;
@@ -181,6 +182,7 @@
             Controls.Add(btnLogin);
             Controls.Add(panel1);
             FormBorderStyle = FormBorderStyle.FixedSingle;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
             Name = "LoginForm";
             StartPosition = FormStartPosition.CenterScreen;

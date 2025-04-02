@@ -70,6 +70,17 @@ namespace UCUFolderLocker
                 MessageBox.Show("New username and password cannot be empty.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            if (newsUsername.Length < 4)
+            {
+                MessageBox.Show("New username must be at least 4 characters long.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (newsPassword.Length < 4)
+            {
+                MessageBox.Show("New password must be at least 4 characters long.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (string.IsNullOrWhiteSpace(newEmail))
             {
                 MessageBox.Show("Email is required for recovery. Changes were not saved.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
