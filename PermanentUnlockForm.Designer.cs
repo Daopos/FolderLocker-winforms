@@ -47,7 +47,7 @@
             txtPassword.Margin = new Padding(3, 2, 3, 2);
             txtPassword.Name = "txtPassword";
             txtPassword.Size = new Size(324, 26);
-            txtPassword.TabIndex = 19;
+            txtPassword.TabIndex = 2;
             txtPassword.UseSystemPasswordChar = true;
             // 
             // labelPassword
@@ -70,7 +70,7 @@
             btnUnlockFolder.Margin = new Padding(3, 2, 3, 2);
             btnUnlockFolder.Name = "btnUnlockFolder";
             btnUnlockFolder.Size = new Size(324, 38);
-            btnUnlockFolder.TabIndex = 17;
+            btnUnlockFolder.TabIndex = 3;
             btnUnlockFolder.Text = "Unlock Folder";
             btnUnlockFolder.UseVisualStyleBackColor = false;
             btnUnlockFolder.Click += btnUnlockFolder_Click;
@@ -124,7 +124,7 @@
             lblFolderPath.Margin = new Padding(3, 2, 3, 2);
             lblFolderPath.Name = "lblFolderPath";
             lblFolderPath.Size = new Size(324, 29);
-            lblFolderPath.TabIndex = 22;
+            lblFolderPath.TabIndex = 1;
             // 
             // buttonBrowse
             // 

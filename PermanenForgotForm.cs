@@ -23,6 +23,8 @@ namespace UCUFolderLocker
         public PermanenForgotForm()
         {
             InitializeComponent();
+
+            progressBarLoading.Visible = false;
         }
 
         private void btnSelectFolder_Click(object sender, EventArgs e)
@@ -119,14 +121,23 @@ namespace UCUFolderLocker
 
             try
             {
+                btnSend.Enabled = false;
+                // Show progress bar and disable the button before sending
+                progressBarLoading.Visible = true;
+                progressBarLoading.Style = ProgressBarStyle.Marquee;
+                progressBarLoading.MarqueeAnimationSpeed = 30;
+
                 SendRecoveryEmail(userEmail, storedRecoveryCode);
 
-           
             }
             catch (Exception ex)
             {
+                // Hide progress bar if error occurs
+                progressBarLoading.Visible = false;
+                btnSend.Enabled = true;
                 MessageBox.Show("Failed to send recovery email: " + ex.Message);
             }
+        
         }
 
         private async void SendRecoveryEmail(string email, string recoveryCode)
@@ -168,6 +179,12 @@ namespace UCUFolderLocker
                     catch (Exception ex)
                     {
                         throw new Exception("Failed to send recovery email. Please try again later. Error: " + ex.Message);
+                    }finally
+                    {
+
+                        btnSend.Enabled = true;
+                        // Show progress bar and disable the button before sending
+                        progressBarLoading.Visible = false;
                     }
                 });
             }

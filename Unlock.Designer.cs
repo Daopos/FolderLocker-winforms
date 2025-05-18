@@ -45,7 +45,7 @@
             txtPassword.Location = new Point(92, 67);
             txtPassword.Name = "txtPassword";
             txtPassword.Size = new Size(304, 23);
-            txtPassword.TabIndex = 5;
+            txtPassword.TabIndex = 1;
             txtPassword.UseSystemPasswordChar = true;
             // 
             // btnUnlock
@@ -57,7 +57,7 @@
             btnUnlock.Location = new Point(92, 110);
             btnUnlock.Name = "btnUnlock";
             btnUnlock.Size = new Size(304, 30);
-            btnUnlock.TabIndex = 4;
+            btnUnlock.TabIndex = 2;
             btnUnlock.Text = "Unlock";
             btnUnlock.UseVisualStyleBackColor = false;
             btnUnlock.Click += btnUnlock_Click;

@@ -48,7 +48,7 @@
             btnSend.Margin = new Padding(3, 2, 3, 2);
             btnSend.Name = "btnSend";
             btnSend.Size = new Size(160, 29);
-            btnSend.TabIndex = 13;
+            btnSend.TabIndex = 3;
             btnSend.Text = "Send ";
             btnSend.UseVisualStyleBackColor = false;
             btnSend.Click += btnSend_Click;
@@ -70,7 +70,7 @@
             lblFolderPath.Margin = new Padding(3, 2, 3, 2);
             lblFolderPath.Name = "lblFolderPath";
             lblFolderPath.Size = new Size(324, 29);
-            lblFolderPath.TabIndex = 18;
+            lblFolderPath.TabIndex = 1;
             // 
             // buttonBrowse
             // 
@@ -125,7 +125,7 @@
             txtRecoveryEmail.Margin = new Padding(3, 2, 3, 2);
             txtRecoveryEmail.Name = "txtRecoveryEmail";
             txtRecoveryEmail.Size = new Size(324, 29);
-            txtRecoveryEmail.TabIndex = 23;
+            txtRecoveryEmail.TabIndex = 2;
             // 
             // ForgotForm
             // 

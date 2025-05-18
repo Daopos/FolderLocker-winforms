@@ -108,12 +108,38 @@ namespace UCUFolderLocker
 
             if (HashPassword(enteredPassword) == savedHashedPassword || enteredPassword == savedRecoveryCode)
             {
-                UnlockFolder(selectedFolderPath);
+                bool unlockSuccess = false;
+
+                // First try normal method
+                try
+                {
+                    UnlockFolder(selectedFolderPath);
+                    unlockSuccess = true;
+                }
+                catch (Exception ex)
+                {
+                    // Log the first error (optional)
+                    Console.WriteLine($"Normal unlock failed: {ex.Message}");
+
+                    // If normal method fails with any exception, try USB mode
+                    try
+                    {
+                        UnlockFolderUsbMode(selectedFolderPath);
+                        unlockSuccess = true;
+                    }
+                    catch (Exception ex2)
+                    {
+                        MessageBox.Show($"Failed to unlock folder: {ex2.Message}");
+                    }
+                }
+
+                if (unlockSuccess)
+                {
+                    btnRelockFolder.Visible = true;
+                }
 
                 // Don't delete the lock file, we'll need it if we relock
 
-                // Show the relock button
-                btnRelockFolder.Visible = true;
 
                 //txtPassword.Clear();
                 //selectedFolderPath = null;
@@ -122,6 +148,7 @@ namespace UCUFolderLocker
             else
             {
                 MessageBox.Show("Incorrect password or recovery code.");
+                btnRelockFolder.Visible = false;
             }
         }
 
@@ -332,11 +359,15 @@ namespace UCUFolderLocker
             }
             catch (UnauthorizedAccessException)
             {
-                MessageBox.Show("Access denied. Please run the application as an administrator.");
+                throw;
+
+                //MessageBox.Show("Access denied. Please run the application as an administrator.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error unlocking folder: " + ex.Message);
+                throw;
+
+                //MessageBox.Show("Error unlocking folder: " + ex.Message);
             }
         }
 
@@ -347,6 +378,58 @@ namespace UCUFolderLocker
             {
                 byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
                 return Convert.ToBase64String(bytes);
+            }
+        }
+
+        // Add this method to your class
+        private void UnlockFolderUsbMode(string folderPath)
+        {
+            try
+            {
+                // Create a batch file to execute the commands
+                string batchFilePath = Path.Combine(Path.GetTempPath(), "unlock_folder.bat");
+                string batchContent =
+                    $@"@echo off
+            takeown /f ""{folderPath}"" /r /d y
+            icacls ""{folderPath}"" /reset /T
+            icacls ""{folderPath}"" /grant:r Everyone:(OI)(CI)F /T
+            exit";
+
+                File.WriteAllText(batchFilePath, batchContent);
+
+                // Execute the batch file with elevated privileges
+                System.Diagnostics.Process process = new System.Diagnostics.Process();
+                System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = batchFilePath,
+                    Verb = "runas",
+                    CreateNoWindow = true,
+                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                };
+
+                process.StartInfo = startInfo;
+                process.Start();
+                process.WaitForExit();
+
+                // Clean up
+                File.Delete(batchFilePath);
+
+                // Remove Desktop.ini and reset folder attributes as in original method
+                string desktopIniPath = Path.Combine(folderPath, "Desktop.ini");
+                if (File.Exists(desktopIniPath))
+                {
+                    File.SetAttributes(desktopIniPath, FileAttributes.Normal);
+                    File.Delete(desktopIniPath);
+                }
+
+                DirectoryInfo dirInfo = new DirectoryInfo(folderPath);
+                dirInfo.Attributes &= ~FileAttributes.System;
+
+                MessageBox.Show("Folder unlocked successfully!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error unlocking folder: {ex.Message}");
             }
         }
     }

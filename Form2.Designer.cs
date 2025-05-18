@@ -41,7 +41,7 @@
             labelPath.Location = new Point(25, 45);
             labelPath.Name = "labelPath";
             labelPath.Size = new Size(51, 21);
-            labelPath.TabIndex = 14;
+            labelPath.TabIndex = 144;
             labelPath.Text = "Email:";
             // 
             // txtEmail
@@ -51,7 +51,7 @@
             txtEmail.Margin = new Padding(3, 2, 3, 2);
             txtEmail.Name = "txtEmail";
             txtEmail.Size = new Size(162, 29);
-            txtEmail.TabIndex = 15;
+            txtEmail.TabIndex = 1;
             // 
             // btnSubmit
             // 

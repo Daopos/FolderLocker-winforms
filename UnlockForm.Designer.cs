@@ -37,7 +37,7 @@
             buttonUnlock.Margin = new Padding(3, 2, 3, 2);
             buttonUnlock.Name = "buttonUnlock";
             buttonUnlock.Size = new Size(324, 38);
-            buttonUnlock.TabIndex = 0;
+            buttonUnlock.TabIndex = 3;
             buttonUnlock.Text = "Unlock Folder";
             buttonUnlock.UseVisualStyleBackColor = false;
             buttonUnlock.Click += btnUnlock_Click;
@@ -79,7 +79,7 @@
             lblFolderPath.Margin = new Padding(3, 2, 3, 2);
             lblFolderPath.Name = "lblFolderPath";
             lblFolderPath.Size = new Size(324, 29);
-            lblFolderPath.TabIndex = 11;
+            lblFolderPath.TabIndex = 1;
             // 
             // buttonBrowse
             // 

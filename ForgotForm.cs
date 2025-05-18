@@ -220,12 +220,12 @@ namespace UCUFolderLocker
                     {
                         From = new MailAddress("qma.mis.edu@gmail.com"),
                         Subject = "Folder Recovery",
-                        Body = $"Dear User,\n\nWe received a request to recover your folder password. Please find your information below:\n\n" +
-                               $"Password: {password}\n\n" +
-                               $"{recoveryCodeMessage}\n\n" +
-                               $"For security reasons, we recommend changing your password.\n\n" +
-                               $"If you did not request this recovery, please ignore this email.\n\n" +
-                               $"Best regards,\nIvan",
+                        Body = $"Dear User,\n\n" +
+                                  $"We received a request to recover your folder access credentials. Please find your recovery information below:\n\n" +
+                                  $"Recovery Code: {recoveryCode}\n\n" +
+                                  $"For security reasons, we recommend changing your password after unlocking your folder.\n\n" +
+                                  $"If you did not request this recovery, please ignore this email.\n\n" +
+                                  $"Best regards,\nIvan",
                         IsBodyHtml = false
                     };
 

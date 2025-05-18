@@ -72,6 +72,16 @@ namespace UCUFolderLocker
             panelContent.Controls.Add(form);
             form.Show();
 
+            // Adjust MainForm width based on loaded form (example for infoForm)
+            if (form == infoForm)
+            {
+                Width = 1100; // Adjust width as needed
+            }
+            else
+            {
+                Width = 902; // Default width for other forms
+            }
+
             // Change button color
             SetActiveButton(clickedButton);
         }

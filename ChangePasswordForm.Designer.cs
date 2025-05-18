@@ -50,7 +50,7 @@
             txtNewPassword.Margin = new Padding(3, 2, 3, 2);
             txtNewPassword.Name = "txtNewPassword";
             txtNewPassword.Size = new Size(163, 29);
-            txtNewPassword.TabIndex = 0;
+            txtNewPassword.TabIndex = 1;
             txtNewPassword.UseSystemPasswordChar = true;
             // 
             // txtConfirmPassword
@@ -60,7 +60,7 @@
             txtConfirmPassword.Margin = new Padding(3, 2, 3, 2);
             txtConfirmPassword.Name = "txtConfirmPassword";
             txtConfirmPassword.Size = new Size(163, 29);
-            txtConfirmPassword.TabIndex = 1;
+            txtConfirmPassword.TabIndex = 2;
             txtConfirmPassword.UseSystemPasswordChar = true;
             // 
             // btnChangePassword_Click
@@ -73,7 +73,7 @@
             btnChangePassword_Click.Margin = new Padding(3, 2, 3, 2);
             btnChangePassword_Click.Name = "btnChangePassword_Click";
             btnChangePassword_Click.Size = new Size(163, 32);
-            btnChangePassword_Click.TabIndex = 2;
+            btnChangePassword_Click.TabIndex = 3;
             btnChangePassword_Click.Text = "Confirm";
             btnChangePassword_Click.UseVisualStyleBackColor = false;
             btnChangePassword_Click.Click += btnChangePasswords_Click;
@@ -85,7 +85,7 @@
             label1.Location = new Point(108, 58);
             label1.Name = "label1";
             label1.Size = new Size(115, 21);
-            label1.TabIndex = 3;
+            label1.TabIndex = 33;
             label1.Text = "New Password:";
             // 
             // label2
@@ -95,7 +95,7 @@
             label2.Location = new Point(108, 113);
             label2.Name = "label2";
             label2.Size = new Size(141, 21);
-            label2.TabIndex = 4;
+            label2.TabIndex = 245;
             label2.Text = "Confirm password:";
             // 
             // button1
@@ -108,7 +108,7 @@
             button1.Margin = new Padding(3, 2, 3, 2);
             button1.Name = "button1";
             button1.Size = new Size(163, 32);
-            button1.TabIndex = 5;
+            button1.TabIndex = 4;
             button1.Text = "Cancel";
             button1.UseVisualStyleBackColor = false;
             button1.Click += btnCancel_Click;

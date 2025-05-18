@@ -72,7 +72,7 @@
             panel1.Location = new Point(0, 0);
             panel1.Margin = new Padding(3, 2, 3, 2);
             panel1.Name = "panel1";
-            panel1.Size = new Size(669, 47);
+            panel1.Size = new Size(897, 47);
             panel1.TabIndex = 11;
             // 
             // labelPath
@@ -82,7 +82,7 @@
             labelPath.Location = new Point(13, 83);
             labelPath.Name = "labelPath";
             labelPath.Size = new Size(84, 21);
-            labelPath.TabIndex = 12;
+            labelPath.TabIndex = 121;
             labelPath.Text = "Username:";
             // 
             // username
@@ -91,14 +91,14 @@
             username.Location = new Point(103, 83);
             username.Margin = new Padding(3, 2, 3, 2);
             username.Name = "username";
-            username.Size = new Size(162, 29);
-            username.TabIndex = 13;
+            username.Size = new Size(228, 29);
+            username.TabIndex = 1;
             // 
             // pictureBox1
             // 
             pictureBox1.BackgroundImage = Properties.Resources.arrow;
             pictureBox1.BackgroundImageLayout = ImageLayout.Stretch;
-            pictureBox1.Location = new Point(280, 83);
+            pictureBox1.Location = new Point(337, 83);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(65, 29);
             pictureBox1.TabIndex = 14;
@@ -108,46 +108,46 @@
             // 
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI", 12F);
-            label2.Location = new Point(358, 83);
+            label2.Location = new Point(415, 83);
             label2.Name = "label2";
             label2.Size = new Size(120, 21);
-            label2.TabIndex = 15;
+            label2.TabIndex = 151;
             label2.Text = "New Username:";
             // 
             // newUsername
             // 
             newUsername.Font = new Font("Segoe UI", 12F);
-            newUsername.Location = new Point(484, 83);
+            newUsername.Location = new Point(541, 83);
             newUsername.Margin = new Padding(3, 2, 3, 2);
             newUsername.Name = "newUsername";
-            newUsername.Size = new Size(162, 29);
-            newUsername.TabIndex = 16;
+            newUsername.Size = new Size(202, 29);
+            newUsername.TabIndex = 2;
             // 
             // label3
             // 
             label3.AutoSize = true;
             label3.Font = new Font("Segoe UI", 12F);
-            label3.Location = new Point(358, 150);
+            label3.Location = new Point(444, 150);
             label3.Name = "label3";
             label3.Size = new Size(115, 21);
-            label3.TabIndex = 20;
+            label3.TabIndex = 201;
             label3.Text = "New Password:";
             // 
             // newPassword
             // 
             newPassword.Font = new Font("Segoe UI", 12F);
-            newPassword.Location = new Point(484, 150);
+            newPassword.Location = new Point(570, 150);
             newPassword.Margin = new Padding(3, 2, 3, 2);
             newPassword.Name = "newPassword";
-            newPassword.Size = new Size(145, 29);
-            newPassword.TabIndex = 21;
+            newPassword.Size = new Size(202, 29);
+            newPassword.TabIndex = 4;
             newPassword.UseSystemPasswordChar = true;
             // 
             // pictureBox2
             // 
             pictureBox2.BackgroundImage = Properties.Resources.arrow;
             pictureBox2.BackgroundImageLayout = ImageLayout.Stretch;
-            pictureBox2.Location = new Point(280, 150);
+            pictureBox2.Location = new Point(366, 150);
             pictureBox2.Name = "pictureBox2";
             pictureBox2.Size = new Size(65, 29);
             pictureBox2.TabIndex = 19;
@@ -160,7 +160,7 @@
             label4.Location = new Point(13, 150);
             label4.Name = "label4";
             label4.Size = new Size(79, 21);
-            label4.TabIndex = 17;
+            label4.TabIndex = 171;
             label4.Text = "Password:";
             // 
             // password
@@ -169,8 +169,8 @@
             password.Location = new Point(103, 150);
             password.Margin = new Padding(3, 2, 3, 2);
             password.Name = "password";
-            password.Size = new Size(142, 29);
-            password.TabIndex = 18;
+            password.Size = new Size(228, 29);
+            password.TabIndex = 3;
             password.UseSystemPasswordChar = true;
             // 
             // btnSubmit
@@ -182,7 +182,7 @@
             btnSubmit.Location = new Point(215, 273);
             btnSubmit.Name = "btnSubmit";
             btnSubmit.Size = new Size(258, 40);
-            btnSubmit.TabIndex = 22;
+            btnSubmit.TabIndex = 6;
             btnSubmit.Text = "Submit";
             btnSubmit.UseVisualStyleBackColor = false;
             btnSubmit.Click += btnSaveChanges_Click;
@@ -194,7 +194,7 @@
             label5.Location = new Point(18, 216);
             label5.Name = "label5";
             label5.Size = new Size(105, 21);
-            label5.TabIndex = 23;
+            label5.TabIndex = 231;
             label5.Text = "Default Email:";
             // 
             // email
@@ -204,12 +204,12 @@
             email.Margin = new Padding(3, 2, 3, 2);
             email.Name = "email";
             email.Size = new Size(280, 29);
-            email.TabIndex = 24;
+            email.TabIndex = 5;
             // 
             // btnTogglePassword
             // 
             btnTogglePassword.Image = Properties.Resources.hidden;
-            btnTogglePassword.Location = new Point(251, 153);
+            btnTogglePassword.Location = new Point(337, 150);
             btnTogglePassword.Margin = new Padding(3, 2, 3, 2);
             btnTogglePassword.Name = "btnTogglePassword";
             btnTogglePassword.Size = new Size(23, 25);
@@ -220,7 +220,7 @@
             // pictureBox3
             // 
             pictureBox3.Image = Properties.Resources.hidden;
-            pictureBox3.Location = new Point(634, 153);
+            pictureBox3.Location = new Point(778, 150);
             pictureBox3.Margin = new Padding(3, 2, 3, 2);
             pictureBox3.Name = "pictureBox3";
             pictureBox3.Size = new Size(23, 25);
@@ -232,7 +232,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(669, 348);
+            ClientSize = new Size(897, 348);
             Controls.Add(pictureBox3);
             Controls.Add(btnTogglePassword);
             Controls.Add(label5);

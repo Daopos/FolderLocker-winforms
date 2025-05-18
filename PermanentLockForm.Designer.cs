@@ -99,7 +99,7 @@
             buttonLock.Margin = new Padding(3, 2, 3, 2);
             buttonLock.Name = "buttonLock";
             buttonLock.Size = new Size(324, 43);
-            buttonLock.TabIndex = 16;
+            buttonLock.TabIndex = 5;
             buttonLock.Text = "Lock Folder";
             buttonLock.UseVisualStyleBackColor = false;
             buttonLock.Click += btnLockFolder_Click;
@@ -111,7 +111,7 @@
             txtEmail.Margin = new Padding(3, 2, 3, 2);
             txtEmail.Name = "txtEmail";
             txtEmail.Size = new Size(324, 29);
-            txtEmail.TabIndex = 17;
+            txtEmail.TabIndex = 4;
             // 
             // labelRecovery
             // 
@@ -130,7 +130,7 @@
             txtConfirmPassword.Margin = new Padding(3, 2, 3, 2);
             txtConfirmPassword.Name = "txtConfirmPassword";
             txtConfirmPassword.Size = new Size(324, 29);
-            txtConfirmPassword.TabIndex = 19;
+            txtConfirmPassword.TabIndex = 3;
             txtConfirmPassword.UseSystemPasswordChar = true;
             // 
             // labelConfirmPassword
@@ -150,7 +150,7 @@
             txtPassword.Margin = new Padding(3, 2, 3, 2);
             txtPassword.Name = "txtPassword";
             txtPassword.Size = new Size(324, 29);
-            txtPassword.TabIndex = 21;
+            txtPassword.TabIndex = 2;
             txtPassword.UseSystemPasswordChar = true;
             // 
             // labelPassword
@@ -180,7 +180,7 @@
             lblFolderPath.Margin = new Padding(3, 2, 3, 2);
             lblFolderPath.Name = "lblFolderPath";
             lblFolderPath.Size = new Size(324, 29);
-            lblFolderPath.TabIndex = 24;
+            lblFolderPath.TabIndex = 1;
             // 
             // buttonBrowse
             // 

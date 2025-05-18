@@ -55,11 +55,11 @@
             txtEmail.Margin = new Padding(3, 2, 3, 2);
             txtEmail.Name = "txtEmail";
             txtEmail.Size = new Size(324, 29);
-            txtEmail.TabIndex = 40;
+            txtEmail.TabIndex = 2;
             // 
             // progressBarLoading
             // 
-            progressBarLoading.Location = new Point(133, 180);
+            progressBarLoading.Location = new Point(133, 139);
             progressBarLoading.Margin = new Padding(3, 2, 3, 2);
             progressBarLoading.Name = "progressBarLoading";
             progressBarLoading.Size = new Size(324, 22);
@@ -71,7 +71,7 @@
             // 
             lblStatus.AutoSize = true;
             lblStatus.Font = new Font("Segoe UI", 12F);
-            lblStatus.Location = new Point(10, 137);
+            lblStatus.Location = new Point(-12, 204);
             lblStatus.Name = "lblStatus";
             lblStatus.Size = new Size(216, 21);
             lblStatus.TabIndex = 37;
@@ -88,7 +88,7 @@
             btnSend.Margin = new Padding(3, 2, 3, 2);
             btnSend.Name = "btnSend";
             btnSend.Size = new Size(160, 29);
-            btnSend.TabIndex = 32;
+            btnSend.TabIndex = 3;
             btnSend.Text = "Send ";
             btnSend.UseVisualStyleBackColor = false;
             btnSend.Click += btnSendRecoveryEmail_Click;
@@ -110,7 +110,7 @@
             lblFolderPath.Margin = new Padding(3, 2, 3, 2);
             lblFolderPath.Name = "lblFolderPath";
             lblFolderPath.Size = new Size(324, 29);
-            lblFolderPath.TabIndex = 35;
+            lblFolderPath.TabIndex = 1;
             // 
             // buttonBrowse
             // 
